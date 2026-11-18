@@ -28,6 +28,8 @@ launch requires frontend/browser acceptance and business approvals.
 - RR-12 local artifacts/quality/contracts are delivered; remote CI and target-cloud
   acceptance remain verification gates. RR-13 telemetry/deployment definitions are
   delivered; actual ingestion, alarm delivery and operations are batch 6.
+- Repository is pushed to GitHub. Remote CI is blocked before execution by a
+  GitHub account billing lock; the owner must resolve it and rerun verification.
 - RR-14 cross-system retention/deletion decisions remain open. Frontend/browser,
   business/legal, license distribution review and named operational owners remain.
 - [Release operations](RELEASE_OPERATIONS.md), [API inventory](API_CONTRACT.json),

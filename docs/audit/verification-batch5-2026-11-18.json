@@ -14,7 +14,7 @@
   "source": {
     "gitRepository": true,
     "baselineCommit": "b51b4275f2fdcfb5c64a849fdeaf94826ddb035b",
-    "uncommittedBatch5Followup": true,
+    "uncommittedBatch5Followup": false,
     "fileCount": 207,
     "manifestSha256": "7fa88157c124853bf8b991c66baf82a347a66796a1ff6b81616c9a1cb07d2a4e",
     "manifestEncoding": "SHA256 of compact sorted JSON fileSha256 map",
@@ -338,7 +338,8 @@
       "tests/foundation.e2e.mjs",
       "tests/migration.test.mjs",
       "tests/operations.test.ts"
-    ]
+    ],
+    "implementationCommit": "13a0002354346cc75aae68bb1661e06a693985d1"
   },
   "artifacts": {
     "runtime": {
@@ -660,5 +661,18 @@
     "Npm advisory scan does not cover OS image advisories; target-platform image scan, 19 license metadata/distribution cases and OS notices remain release gates.",
     "Frontend/browser acceptance, legal/finance retention policies and assigned operational owners remain pending.",
     "Source fingerprint excludes generated dependencies/builds and mutable audit reports; final commit provides full repository identity."
-  ]
+  ],
+  "remoteVerification": {
+    "repository": "https://github.com/RishavK1/renewrelay",
+    "branch": "main",
+    "push": "PASS",
+    "checkedAtUtc": "2026-11-18T12:04:00.343279+00:00",
+    "workflow": "Backend release checks",
+    "status": "BLOCKED_BY_GITHUB_ACCOUNT",
+    "runUrl": "https://github.com/RishavK1/renewrelay/actions/runs/44300192208",
+    "retryRunUrl": "https://github.com/RishavK1/renewrelay/actions/runs/44300245934",
+    "annotation": "The job was not started because your account is locked due to a billing issue.",
+    "stepsExecuted": 0,
+    "nextAction": "Repository/account owner resolves GitHub billing lock, then reruns the workflow; inspect remote results before closing CI acceptance."
+  }
 }

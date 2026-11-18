@@ -64,6 +64,15 @@ TLS configuration respects the different node-postgres/libpq and Prisma migratio
 engine options; actual RDS hostname/CA validation remains staging work.
 [Prisma PostgreSQL TLS options](https://docs.prisma.io/docs/orm/v7/core-concepts/supported-databases/postgresql).
 
+**GitHub follow-up:** Implementation was pushed to
+[RishavK1/renewrelay](https://github.com/RishavK1/renewrelay), main, commit
+13a0002354346cc75aae68bb1661e06a693985d1. The
+[remote run](https://github.com/RishavK1/renewrelay/actions/runs/44300192208)
+and manual retry were blocked before any step executed. GitHub's annotation is:
+“The job was not started because your account is locked due to a billing issue.”
+The account owner must resolve that lock and rerun CI. This is external-runner
+admission failure, not a remote test pass or an observed test-code failure.
+
 **Next:** batch 6 staging/provider acceptance; frontend remains separate. This is
 not an unconditional production or legal-compliance signoff.
 
