@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "incremental": true,
+    "jsx": "react-jsx",
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

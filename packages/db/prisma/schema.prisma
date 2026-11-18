@@ -1,0 +1,630 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  twoFactorEnabled Boolean @default(false)
+  twoFactors TwoFactor[]
+  identityReceipts IdentityReceipt[]
+  securityEvents IdentitySecurityEvent[]
+  memberships  Membership[]
+
+  @@map("auth_users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  mfaVerifiedAt DateTime?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model Account {
+  id                    String   @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("auth_verifications")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("auth_rate_limits")
+}
+
+enum Role {
+  owner
+  admin
+  member
+}
+
+model Workspace {
+  id          String @id @default(uuid()) @db.Uuid
+  name        String
+  timezone    String
+  version     Int @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  memberships Membership[]
+  invitations Invitation[]
+  clients     Client[]
+  audit       AuditEvent[]
+  mailJobs    MailJob[]
+  renewalItems RenewalItem[]
+  renewalCycles RenewalCycle[]
+  renewalImports RenewalImport[]
+  notificationDispatch NotificationWorkspace?
+  billing WorkspaceBilling?
+
+  @@map("workspaces")
+}
+
+model Membership {
+  workspaceId String @db.Uuid
+  userId      String
+  email       String
+  role        Role
+  joinedAt    DateTime @default(now()) @db.Timestamptz
+  removedAt   DateTime? @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user        User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  renewalItems RenewalItem[]
+  renewalCycles RenewalCycle[]
+
+  @@id([workspaceId, userId])
+  @@index([userId, removedAt])
+  @@map("memberships")
+}
+
+model Invitation {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  email       String
+  role        Role
+  tokenDigest String @unique
+  issuedBy    String
+  expiresAt   DateTime @db.Timestamptz
+  acceptedAt  DateTime? @db.Timestamptz
+  revokedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  mailJobs    MailJob[]
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, email, expiresAt])
+  @@map("invitations")
+}
+
+model Client {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  name        String
+  archivedAt  DateTime? @db.Timestamptz
+  version     Int @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  contacts    Contact[]
+  renewalItems RenewalItem[]
+
+  @@unique([workspaceId, id])
+  @@map("clients")
+}
+
+model Contact {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  clientId    String @db.Uuid
+  name        String
+  email       String
+  archivedAt  DateTime? @db.Timestamptz
+  version     Int @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  client      Client @relation(fields: [workspaceId, clientId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, clientId, id])
+  decisionRequests DecisionRequest[]
+
+  @@map("contacts")
+}
+
+model AuditEvent {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  actorId     String
+  event       String
+  entityId    String
+  details     Json
+  requestId   String @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, entityId, createdAt])
+  @@map("audit_events")
+}
+
+model CommandReceipt {
+  actorId   String
+  scope     String
+  key       String
+  digest    String
+  result    Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@id([actorId, scope, key])
+  @@map("command_receipts")
+}
+
+model MailJob {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  inviteId    String @db.Uuid
+  recipient   String
+  ciphertext  String?
+  status      String @default("pending")
+  attempts    Int @default(0)
+  runAt       DateTime @default(now()) @db.Timestamptz
+  expiresAt   DateTime @db.Timestamptz
+  leaseUntil  DateTime? @db.Timestamptz
+  leaseToken  String? @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  invitation  Invitation @relation(fields: [workspaceId, inviteId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, inviteId])
+  @@index([status, runAt])
+  @@map("mail_jobs")
+}
+
+enum Recurrence {
+  once
+  monthly
+  yearly
+}
+
+enum RenewalPayer {
+  agency
+  client
+}
+
+enum RenewalState {
+  draft
+  open
+  ready
+  renewed
+  cancelled
+  withdrawn
+}
+
+enum RenewalAction {
+  renew
+  cancel
+}
+
+enum InvoiceStatus {
+  not_applicable
+  to_invoice
+  invoiced
+}
+
+model RenewalItem {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  clientId    String @db.Uuid
+  operatorId  String
+  service     String
+  provider    String
+  recurrence  Recurrence
+  anchorOn    DateTime @db.Date
+  archivedAt  DateTime? @db.Timestamptz
+  version     Int @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  client      Client @relation(fields: [workspaceId, clientId], references: [workspaceId, id], onDelete: Restrict)
+  operator    Membership @relation(fields: [workspaceId, operatorId], references: [workspaceId, userId], onDelete: Restrict)
+  cycles      RenewalCycle[]
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, clientId, archivedAt])
+  @@index([workspaceId, operatorId])
+  @@map("renewal_items")
+}
+
+model RenewalCycle {
+  id                  String @id @default(uuid()) @db.Uuid
+  workspaceId         String @db.Uuid
+  itemId              String @db.Uuid
+  operatorId          String
+  sequence            Int
+  service             String
+  provider            String
+  state               RenewalState
+  intendedAction      RenewalAction?
+  blockedReason       String?
+  expiryOn            DateTime @db.Date
+  noticeBy            DateTime? @db.Date
+  respondBy           DateTime? @db.Date
+  nextActionOn        DateTime @db.Date
+  timezone            String
+  payer               RenewalPayer
+  rebillable          Boolean
+  autoRenew           Boolean @default(false)
+  currency            String @db.Char(3)
+  supplierCostMinor   Int?
+  clientQuoteMinor    Int?
+  term                String?
+  performedOn         DateTime? @db.Date
+  providerReference   String?
+  outcomeNote         String?
+  billingStatus       InvoiceStatus @default(not_applicable)
+  invoiceReference    String?
+  closedAt            DateTime? @db.Timestamptz
+  version             Int @default(1)
+  createdAt           DateTime @default(now()) @db.Timestamptz
+  updatedAt           DateTime @updatedAt @db.Timestamptz
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  item                RenewalItem @relation(fields: [workspaceId, itemId], references: [workspaceId, id], onDelete: Restrict)
+  operator            Membership @relation(fields: [workspaceId, operatorId], references: [workspaceId, userId], onDelete: Restrict)
+
+  decisionRequests DecisionRequest[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, itemId, sequence])
+  @@index([workspaceId, state, nextActionOn, id])
+  @@index([workspaceId, nextActionOn, id])
+  @@index([workspaceId, operatorId, nextActionOn, id])
+  @@index([workspaceId, billingStatus])
+  @@map("renewal_cycles")
+}
+
+model RenewalImport {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  actorId     String
+  digest      String
+  version     Int @default(1)
+  rows        Json?
+  result      Json?
+  expiresAt   DateTime @db.Timestamptz
+  committedAt DateTime? @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, actorId, digest])
+  @@index([expiresAt])
+  @@map("renewal_imports")
+}
+
+enum DecisionChoice {
+  approve
+  cancel
+  question
+}
+
+model DecisionRequest {
+  id              String @id @default(uuid()) @db.Uuid
+  workspaceId     String @db.Uuid
+  cycleId         String @db.Uuid
+  contactId       String @db.Uuid
+  revision        Int
+  issuerId        String
+  issuerLabel     String
+  recipientEmail  String
+  service         String
+  currency        String @db.Char(3)
+  amountMinor     Int
+  term            String
+  respondBy       DateTime @db.Date
+  deadlineAt      DateTime @db.Timestamptz
+  customerNote    String?
+  expiryOn        DateTime? @db.Date
+  noticeBy        DateTime? @db.Date
+  supersededAt    DateTime? @db.Timestamptz
+  decidedAt       DateTime? @db.Timestamptz
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  cycle           RenewalCycle @relation(fields: [workspaceId, cycleId], references: [workspaceId, id], onDelete: Restrict)
+  contact         Contact @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  links           DecisionLink[]
+  challenges      DecisionChallenge[]
+  responses       DecisionResponse[]
+  deliveries      DecisionDelivery[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, cycleId, revision])
+  @@index([workspaceId, contactId])
+  @@map("decision_requests")
+}
+
+model DecisionLink {
+  id            String @id @default(uuid()) @db.Uuid
+  workspaceId   String @db.Uuid
+  requestId     String @db.Uuid
+  digest        String @unique
+  validFrom     DateTime @db.Timestamptz
+  expiresAt     DateTime @db.Timestamptz
+  revokedAt     DateTime? @db.Timestamptz
+  request       DecisionRequest @relation(fields: [workspaceId, requestId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@index([workspaceId, requestId])
+  @@map("decision_links")
+}
+
+model DecisionChallenge {
+  id            String @id @default(uuid()) @db.Uuid
+  workspaceId   String @db.Uuid
+  requestId     String @db.Uuid
+  sessionId     String @db.Uuid
+  digest        String
+  accessDigest  String?
+  attempts      Int @default(0)
+  expiresAt     DateTime @db.Timestamptz
+  verifiedAt    DateTime? @db.Timestamptz
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  request       DecisionRequest @relation(fields: [workspaceId, requestId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@index([workspaceId, requestId, sessionId, createdAt])
+  @@map("decision_challenges")
+}
+
+model DecisionResponse {
+  id            String @id @default(uuid()) @db.Uuid
+  workspaceId   String @db.Uuid
+  requestId     String @db.Uuid
+  sessionId     String @db.Uuid
+  key           String
+  digest        String
+  choice        DecisionChoice
+  question      String?
+  cycleVersion  Int
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  request       DecisionRequest @relation(fields: [workspaceId, requestId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, requestId, sessionId, key])
+  @@map("decision_responses")
+}
+
+model DecisionDelivery {
+  id            String @id @default(uuid()) @db.Uuid
+  workspaceId   String @db.Uuid
+  requestId     String @db.Uuid
+  kind          String
+  recipient     String
+  dedupeKey     String? @unique
+  messageCiphertext String?
+  firstAttemptAt DateTime? @db.Timestamptz
+  lastError     String?
+  ciphertext    String?
+  status        String @default("pending")
+  providerId    String? @unique
+  attempts      Int @default(0)
+  runAt         DateTime @db.Timestamptz
+  expiresAt     DateTime @db.Timestamptz
+  leaseUntil    DateTime? @db.Timestamptz
+  leaseToken    String? @db.Uuid
+  request       DecisionRequest @relation(fields: [workspaceId, requestId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@index([status, runAt])
+  @@index([workspaceId, requestId, status])
+  @@map("decision_deliveries")
+}
+
+model MailProviderEvent {
+  id          String @id
+  deliveryId  String
+  providerEmailId String?
+  eventType   String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  processedAt DateTime? @db.Timestamptz
+
+  @@index([processedAt, createdAt])
+  @@map("mail_provider_events")
+}
+
+model SuppressedRecipient {
+  email       String @id
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@map("suppressed_recipients")
+}
+
+model DecisionSession {
+  linkDigest  String?
+  id          String @id @default(uuid()) @db.Uuid
+  digest      String @unique
+  ciphertext  String
+  csrfDigest  String
+  expiresAt   DateTime @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([expiresAt])
+  @@index([linkDigest, createdAt])
+  @@map("decision_sessions")
+}
+
+model InternalNotification {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  cycleId     String? @db.Uuid
+  recipientId String
+  recipient   String
+  kind        String
+  messageCiphertext String?
+  firstAttemptAt DateTime? @db.Timestamptz
+  lastError String?
+  dedupeKey   String @unique
+  runAt       DateTime @db.Timestamptz
+  expiresAt   DateTime @db.Timestamptz
+  status      String @default("pending")
+  attempts    Int @default(0)
+  leaseToken  String? @db.Uuid
+  leaseUntil  DateTime? @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([status, runAt])
+  @@map("internal_notifications")
+}
+
+model NotificationWorkspace {
+  id String @id @db.Uuid
+  workspace Workspace @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@map("notification_workspaces")
+}
+
+model WorkspaceBilling {
+  workspaceId       String @id @db.Uuid
+  trialEndsAt       DateTime @db.Timestamptz
+  paidThrough       DateTime? @db.Timestamptz
+  paymentFailed     Boolean @default(false)
+  cancelAtTerm      Boolean @default(false)
+  providerId        String? @unique
+  providerStatus    String?
+  checkoutIntent    String? @unique @db.Uuid
+  checkoutKey       String?
+  checkoutState     String @default("none")
+  checkoutUrl       String?
+  cancelRequestedAt DateTime? @db.Timestamptz
+  cancellationId    String? @db.Uuid
+  cancellationMode  String?
+  lastCheckedAt     DateTime? @db.Timestamptz
+  reconcileAfter    DateTime @default(now()) @db.Timestamptz
+  deletionRequestedAt DateTime? @db.Timestamptz
+  purgeAfter        DateTime? @db.Timestamptz
+  purgedAt          DateTime? @db.Timestamptz
+  recoveryOwnerId   String?
+  version           Int @default(1)
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([reconcileAfter])
+  @@map("workspace_billing")
+}
+
+model BillingEvent {
+  id          String @id
+  environment String
+  providerId  String
+  eventType   String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  processedAt DateTime? @db.Timestamptz
+  attempts    Int @default(0)
+  runAt       DateTime @default(now()) @db.Timestamptz
+  errorCode   String?
+
+  @@index([processedAt, runAt])
+  @@map("billing_events")
+}
+
+model BillingPayment {
+  id          String @id
+  workspaceId String @db.Uuid
+  providerId  String
+  invoiceId   String
+  amountMinor Int
+  currency    String @db.Char(3)
+  periodStart DateTime @db.Timestamptz
+  periodEnd   DateTime @db.Timestamptz
+  verifiedAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([workspaceId, periodEnd])
+  @@map("billing_payments")
+}
+
+model TwoFactor {
+  id String @id
+  userId String
+  secret String
+  backupCodes String
+  verified Boolean @default(true)
+  failedVerificationCount Int @default(0)
+  lockedUntil DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("auth_two_factors")
+}
+
+model ApiRateLimit {
+  key String @id
+  count Int
+  expiresAt DateTime @db.Timestamptz
+  @@index([expiresAt])
+  @@map("api_rate_limits")
+}
+
+model IdentityReceipt {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String
+  scope String
+  key String
+  digest String
+  result Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  @@unique([actorId, scope, key])
+  @@map("auth_action_receipts")
+}
+
+model IdentitySecurityEvent {
+ id String @id @default(uuid()) @db.Uuid
+ userId String
+ event String
+ details Json
+ createdAt DateTime @default(now()) @db.Timestamptz
+ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ @@index([userId, createdAt, id])
+ @@map("auth_security_events")
+}

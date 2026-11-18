@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-18T10:25:09.089Z",
+  "environment": "isolated local PostgreSQL 16.11",
+  "workspaces": 100,
+  "items": 10000,
+  "dueReminders": 10000,
+  "decisionReminders": 5000,
+  "internalReminders": 5000,
+  "provider": "In-process healthy fake, 10 ms acceptance latency",
+  "configuredSendsPerSecond": 100,
+  "workerConcurrency": 4,
+  "batches": 76,
+  "duplicateAcceptances": 0,
+  "accepted": 10000,
+  "schedulerSweepMs": 1183,
+  "reminderP99Ms": 117964,
+  "reminderLastMs": 119173,
+  "querySamples": 1127,
+  "domainQueueReadP95Ms": 8,
+  "withinFiveMinutes": true,
+  "queueDomainUnder500Ms": true,
+  "limitations": [
+    "In-process provider fixture, no live delivery or quota acceptance",
+    "Queue timings measure authorized domain queries, excluding HTTP/network overhead",
+    "Local single-worker capacity only; cloud staging and aggregate provider-account quota remain release gates",
+    "Five-minute calculation includes one scheduler sweep and a conservative 30-second idle poll allowance"
+  ]
+}

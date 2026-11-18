@@ -1,0 +1,1560 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "RenewRelay staging/production foundation; pre-provisioned VPC, trusted proxy, ECR image and runtime secrets required. Sends/billing/purge disabled until batch 6 acceptance.",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "AllowedValues": [
+        "staging",
+        "production"
+      ],
+      "Default": "staging"
+    },
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PublicSubnets": {
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "PrivateSubnets": {
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "CertificateArn": {
+      "Type": "String"
+    },
+    "TrustedProxyPrefixListId": {
+      "Type": "String",
+      "AllowedPattern": "pl-[a-f0-9]+",
+      "Description": "Maintained prefix list for the trusted proxy that overwrites cf-connecting-ip; do not allow direct public origin ingress."
+    },
+    "ImageUri": {
+      "Type": "String",
+      "AllowedPattern": ".+@sha256:[a-f0-9]{64}",
+      "Description": "Approved immutable ECR image digest"
+    },
+    "Origin": {
+      "Type": "String",
+      "AllowedPattern": "https://[^/]+",
+      "Description": "Public HTTPS origin without a trailing slash"
+    },
+    "WebSecretArn": {
+      "Type": "String",
+      "Description": "Secrets Manager JSON: DATABASE_URL, AUTH_DATABASE_URL, BETTER_AUTH_SECRET, INVITE_ENCRYPTION_KEY, SMTP_URL, MAIL_FROM"
+    },
+    "WorkerSecretArn": {
+      "Type": "String",
+      "Description": "Secrets Manager JSON: WORKER_DATABASE_URL, INVITE_ENCRYPTION_KEY, SMTP_URL, MAIL_FROM"
+    },
+    "WebCount": {
+      "Type": "Number",
+      "Default": 1,
+      "MinValue": 1,
+      "MaxValue": 4
+    },
+    "BackupRetentionDays": {
+      "Type": "Number",
+      "Default": 7,
+      "MinValue": 1,
+      "MaxValue": 35,
+      "Description": "Deployment owner must approve backup retention before creation."
+    },
+    "MonthlyBudgetUsd": {
+      "Type": "Number",
+      "Default": 200,
+      "MinValue": 1,
+      "Description": "Alert budget, not an estimate or spending cap."
+    },
+    "LogRetentionDays": {
+      "Type": "Number",
+      "Default": 30,
+      "AllowedValues": [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        180,
+        365
+      ],
+      "Description": "Deployment owner must approve log retention; no request payloads are collected."
+    },
+    "ApplicationEnabled": {
+      "Type": "String",
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "false",
+      "Description": "Enable only after migration/grants and runtime secrets are ready."
+    },
+    "MigrationImageUri": {
+      "Type": "String",
+      "AllowedPattern": ".+@sha256:[a-f0-9]{64}"
+    },
+    "CpuArchitecture": {
+      "Type": "String",
+      "Default": "ARM64",
+      "AllowedValues": [
+        "ARM64",
+        "X86_64"
+      ],
+      "Description": "Must match both immutable container image architectures."
+    }
+  },
+  "Resources": {
+    "Alerts": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Fn::Sub": "renewrelay-${Environment}-alerts"
+        }
+      }
+    },
+    "TopicPolicy": {
+      "Type": "AWS::SNS::TopicPolicy",
+      "Properties": {
+        "Topics": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "cloudwatch.amazonaws.com",
+                  "budgets.amazonaws.com",
+                  "events.amazonaws.com",
+                  "rds.amazonaws.com"
+                ]
+              },
+              "Action": "sns:Publish",
+              "Resource": {
+                "Ref": "Alerts"
+              },
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "Budget": {
+      "Type": "AWS::Budgets::Budget",
+      "Properties": {
+        "Budget": {
+          "BudgetName": {
+            "Fn::Sub": "renewrelay-${Environment}"
+          },
+          "BudgetLimit": {
+            "Amount": {
+              "Ref": "MonthlyBudgetUsd"
+            },
+            "Unit": "USD"
+          },
+          "TimeUnit": "MONTHLY",
+          "BudgetType": "COST"
+        },
+        "NotificationsWithSubscribers": [
+          {
+            "Notification": {
+              "NotificationType": "ACTUAL",
+              "ComparisonOperator": "GREATER_THAN",
+              "Threshold": 80,
+              "ThresholdType": "PERCENTAGE"
+            },
+            "Subscribers": [
+              {
+                "SubscriptionType": "SNS",
+                "Address": {
+                  "Ref": "Alerts"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "WebLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/renewrelay/${Environment}/web"
+        },
+        "RetentionInDays": {
+          "Ref": "LogRetentionDays"
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "WorkerLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/renewrelay/${Environment}/worker"
+        },
+        "RetentionInDays": {
+          "Ref": "LogRetentionDays"
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "IngressGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "HTTPS from the configured trusted proxy only",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "SourcePrefixListId": {
+              "Ref": "TrustedProxyPrefixListId"
+            }
+          }
+        ]
+      }
+    },
+    "TaskGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Private application tasks",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 3000,
+            "ToPort": 3000,
+            "SourceSecurityGroupId": {
+              "Ref": "IngressGroup"
+            }
+          }
+        ]
+      }
+    },
+    "DatabaseGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Database only from private tasks",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 5432,
+            "ToPort": 5432,
+            "SourceSecurityGroupId": {
+              "Ref": "TaskGroup"
+            }
+          }
+        ]
+      }
+    },
+    "DatabaseSubnet": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Private database subnets",
+        "SubnetIds": {
+          "Ref": "PrivateSubnets"
+        }
+      }
+    },
+    "DatabaseParameters": {
+      "Type": "AWS::RDS::DBParameterGroup",
+      "Properties": {
+        "Description": "Enforce PostgreSQL TLS",
+        "Family": "postgres18",
+        "Parameters": {
+          "rds.force_ssl": "1"
+        }
+      }
+    },
+    "Database": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "Engine": "postgres",
+        "EngineVersion": "18",
+        "DBInstanceClass": "db.t4g.small",
+        "AllocatedStorage": "20",
+        "MaxAllocatedStorage": 100,
+        "StorageEncrypted": true,
+        "PubliclyAccessible": false,
+        "MultiAZ": true,
+        "DBName": "renewrelay",
+        "MasterUsername": "renewrelay_migrator",
+        "ManageMasterUserPassword": true,
+        "DBSubnetGroupName": {
+          "Ref": "DatabaseSubnet"
+        },
+        "DBParameterGroupName": {
+          "Ref": "DatabaseParameters"
+        },
+        "VPCSecurityGroups": [
+          {
+            "Ref": "DatabaseGroup"
+          }
+        ],
+        "BackupRetentionPeriod": {
+          "Ref": "BackupRetentionDays"
+        },
+        "DeletionProtection": true,
+        "EnableCloudwatchLogsExports": [
+          "postgresql"
+        ],
+        "CopyTagsToSnapshot": true,
+        "AutoMinorVersionUpgrade": true
+      },
+      "DeletionPolicy": "Snapshot",
+      "UpdateReplacePolicy": "Snapshot"
+    },
+    "DatabaseEvents": {
+      "Type": "AWS::RDS::EventSubscription",
+      "Properties": {
+        "Enabled": true,
+        "SnsTopicArn": {
+          "Ref": "Alerts"
+        },
+        "SourceType": "db-instance",
+        "SourceIds": [
+          {
+            "Ref": "Database"
+          }
+        ],
+        "EventCategories": [
+          "failure",
+          "low storage",
+          "availability",
+          "notification"
+        ]
+      },
+      "DependsOn": "TopicPolicy"
+    },
+    "Cluster": {
+      "Type": "AWS::ECS::Cluster",
+      "Properties": {
+        "ClusterSettings": [
+          {
+            "Name": "containerInsights",
+            "Value": "enabled"
+          }
+        ]
+      }
+    },
+    "TaskRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    },
+    "WebExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyName": "ReadRuntimeSecret",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "secretsmanager:GetSecretValue",
+                  "Resource": {
+                    "Ref": "WebSecretArn"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "WebTask": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": {
+          "Fn::Sub": "renewrelay-${Environment}-web"
+        },
+        "Cpu": "512",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "WebExecutionRole",
+            "Arn"
+          ]
+        },
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole",
+            "Arn"
+          ]
+        },
+        "RuntimePlatform": {
+          "CpuArchitecture": {
+            "Ref": "CpuArchitecture"
+          },
+          "OperatingSystemFamily": "LINUX"
+        },
+        "Volumes": [
+          {
+            "Name": "tmp"
+          }
+        ],
+        "ContainerDefinitions": [
+          {
+            "Name": "web",
+            "Image": {
+              "Ref": "ImageUri"
+            },
+            "Essential": true,
+            "ReadonlyRootFilesystem": true,
+            "User": "10001:10001",
+            "Command": [
+              "node",
+              "dist/web.mjs"
+            ],
+            "Environment": [
+              {
+                "Name": "RENEWRELAY_ENV",
+                "Value": {
+                  "Ref": "Environment"
+                }
+              },
+              {
+                "Name": "BETTER_AUTH_URL",
+                "Value": {
+                  "Ref": "Origin"
+                }
+              },
+              {
+                "Name": "TRUSTED_CLIENT_IP_HEADER",
+                "Value": "cf-connecting-ip"
+              },
+              {
+                "Name": "OUTBOUND_MAIL_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "RAZORPAY_BILLING_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "WORKSPACE_PURGE_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "NODE_EXTRA_CA_CERTS",
+                "Value": "/app/certs/rds-global-bundle.pem"
+              },
+              {
+                "Name": "PORT",
+                "Value": "3000"
+              },
+              {
+                "Name": "HOSTNAME",
+                "Value": "0.0.0.0"
+              }
+            ],
+            "Secrets": [
+              {
+                "Name": "DATABASE_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:DATABASE_URL::"
+                }
+              },
+              {
+                "Name": "AUTH_DATABASE_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:AUTH_DATABASE_URL::"
+                }
+              },
+              {
+                "Name": "BETTER_AUTH_SECRET",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:BETTER_AUTH_SECRET::"
+                }
+              },
+              {
+                "Name": "INVITE_ENCRYPTION_KEY",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:INVITE_ENCRYPTION_KEY::"
+                }
+              },
+              {
+                "Name": "SMTP_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:SMTP_URL::"
+                }
+              },
+              {
+                "Name": "MAIL_FROM",
+                "ValueFrom": {
+                  "Fn::Sub": "${WebSecretArn}:MAIL_FROM::"
+                }
+              }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WebLogs"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "app",
+                "mode": "blocking"
+              }
+            },
+            "MountPoints": [
+              {
+                "SourceVolume": "tmp",
+                "ContainerPath": "/tmp",
+                "ReadOnly": false
+              }
+            ],
+            "HealthCheck": {
+              "Command": [
+                "CMD",
+                "node",
+                "dist/healthcheck.mjs",
+                "web"
+              ],
+              "Interval": 30,
+              "Timeout": 10,
+              "Retries": 3,
+              "StartPeriod": 60
+            },
+            "StopTimeout": 60,
+            "LinuxParameters": {
+              "InitProcessEnabled": true
+            },
+            "PortMappings": [
+              {
+                "ContainerPort": 3000,
+                "Protocol": "tcp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "WorkerExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyName": "ReadRuntimeSecret",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "secretsmanager:GetSecretValue",
+                  "Resource": {
+                    "Ref": "WorkerSecretArn"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "WorkerTask": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": {
+          "Fn::Sub": "renewrelay-${Environment}-worker"
+        },
+        "Cpu": "512",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "WorkerExecutionRole",
+            "Arn"
+          ]
+        },
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole",
+            "Arn"
+          ]
+        },
+        "RuntimePlatform": {
+          "CpuArchitecture": {
+            "Ref": "CpuArchitecture"
+          },
+          "OperatingSystemFamily": "LINUX"
+        },
+        "Volumes": [
+          {
+            "Name": "tmp"
+          }
+        ],
+        "ContainerDefinitions": [
+          {
+            "Name": "worker",
+            "Image": {
+              "Ref": "ImageUri"
+            },
+            "Essential": true,
+            "ReadonlyRootFilesystem": true,
+            "User": "10001:10001",
+            "Command": [
+              "node",
+              "dist/worker.mjs"
+            ],
+            "Environment": [
+              {
+                "Name": "RENEWRELAY_ENV",
+                "Value": {
+                  "Ref": "Environment"
+                }
+              },
+              {
+                "Name": "BETTER_AUTH_URL",
+                "Value": {
+                  "Ref": "Origin"
+                }
+              },
+              {
+                "Name": "TRUSTED_CLIENT_IP_HEADER",
+                "Value": "cf-connecting-ip"
+              },
+              {
+                "Name": "OUTBOUND_MAIL_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "RAZORPAY_BILLING_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "WORKSPACE_PURGE_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "NODE_EXTRA_CA_CERTS",
+                "Value": "/app/certs/rds-global-bundle.pem"
+              }
+            ],
+            "Secrets": [
+              {
+                "Name": "WORKER_DATABASE_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${WorkerSecretArn}:WORKER_DATABASE_URL::"
+                }
+              },
+              {
+                "Name": "INVITE_ENCRYPTION_KEY",
+                "ValueFrom": {
+                  "Fn::Sub": "${WorkerSecretArn}:INVITE_ENCRYPTION_KEY::"
+                }
+              },
+              {
+                "Name": "SMTP_URL",
+                "ValueFrom": {
+                  "Fn::Sub": "${WorkerSecretArn}:SMTP_URL::"
+                }
+              },
+              {
+                "Name": "MAIL_FROM",
+                "ValueFrom": {
+                  "Fn::Sub": "${WorkerSecretArn}:MAIL_FROM::"
+                }
+              }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WorkerLogs"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "app",
+                "mode": "blocking"
+              }
+            },
+            "MountPoints": [
+              {
+                "SourceVolume": "tmp",
+                "ContainerPath": "/tmp",
+                "ReadOnly": false
+              }
+            ],
+            "HealthCheck": {
+              "Command": [
+                "CMD",
+                "node",
+                "dist/healthcheck.mjs",
+                "worker"
+              ],
+              "Interval": 30,
+              "Timeout": 10,
+              "Retries": 3,
+              "StartPeriod": 60
+            },
+            "StopTimeout": 60,
+            "LinuxParameters": {
+              "InitProcessEnabled": true
+            }
+          }
+        ]
+      }
+    },
+    "LoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Type": "application",
+        "Scheme": "internet-facing",
+        "Subnets": {
+          "Ref": "PublicSubnets"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "IngressGroup"
+          }
+        ],
+        "LoadBalancerAttributes": [
+          {
+            "Key": "routing.http.drop_invalid_header_fields.enabled",
+            "Value": "true"
+          }
+        ]
+      }
+    },
+    "Target": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Port": 3000,
+        "Protocol": "HTTP",
+        "TargetType": "ip",
+        "HealthCheckPath": "/api/v1/health",
+        "Matcher": {
+          "HttpCode": "200"
+        },
+        "TargetGroupAttributes": [
+          {
+            "Key": "deregistration_delay.timeout_seconds",
+            "Value": "60"
+          }
+        ]
+      }
+    },
+    "Listener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "LoadBalancer"
+        },
+        "Port": 443,
+        "Protocol": "HTTPS",
+        "SslPolicy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+        "Certificates": [
+          {
+            "CertificateArn": {
+              "Ref": "CertificateArn"
+            }
+          }
+        ],
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "Target"
+            }
+          }
+        ]
+      }
+    },
+    "WebService": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "Cluster"
+        },
+        "TaskDefinition": {
+          "Ref": "WebTask"
+        },
+        "LaunchType": "FARGATE",
+        "PlatformVersion": "1.4.0",
+        "DesiredCount": {
+          "Fn::If": [
+            "StartApplication",
+            {
+              "Ref": "WebCount"
+            },
+            0
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "Subnets": {
+              "Ref": "PrivateSubnets"
+            },
+            "SecurityGroups": [
+              {
+                "Ref": "TaskGroup"
+              }
+            ]
+          }
+        },
+        "DeploymentConfiguration": {
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true
+          },
+          "MinimumHealthyPercent": 100,
+          "MaximumPercent": 200
+        },
+        "HealthCheckGracePeriodSeconds": 90,
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 3000,
+            "TargetGroupArn": {
+              "Ref": "Target"
+            }
+          }
+        ]
+      },
+      "DependsOn": "Listener"
+    },
+    "WorkerService": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "Cluster"
+        },
+        "TaskDefinition": {
+          "Ref": "WorkerTask"
+        },
+        "LaunchType": "FARGATE",
+        "PlatformVersion": "1.4.0",
+        "DesiredCount": {
+          "Fn::If": [
+            "StartApplication",
+            1,
+            0
+          ]
+        },
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "Subnets": {
+              "Ref": "PrivateSubnets"
+            },
+            "SecurityGroups": [
+              {
+                "Ref": "TaskGroup"
+              }
+            ]
+          }
+        },
+        "DeploymentConfiguration": {
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true
+          },
+          "MinimumHealthyPercent": 0,
+          "MaximumPercent": 100
+        }
+      },
+      "DependsOn": "Database"
+    },
+    "ApiErrorsAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "ServerErrors",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "web"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Sum"
+      }
+    },
+    "ApiLatencyAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "LatencyMs",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "web"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 500,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "ExtendedStatistic": "p95"
+      }
+    },
+    "WorkerErrorsAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "WorkerErrors",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "worker"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 1,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Sum"
+      }
+    },
+    "QueueAgeAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "QueueAgeSeconds",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "worker"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 300,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Maximum"
+      }
+    },
+    "BillingAgeAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "BillingEventAgeSeconds",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "worker"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 900,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 1,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Maximum"
+      }
+    },
+    "UncertainAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "UncertainJobs",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "worker"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 1,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Maximum"
+      }
+    },
+    "HeartbeatAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "WorkerHeartbeat",
+        "Dimensions": [
+          {
+            "Name": "service",
+            "Value": "worker"
+          },
+          {
+            "Name": "environment",
+            "Value": {
+              "Ref": "Environment"
+            }
+          }
+        ],
+        "Threshold": 1,
+        "ComparisonOperator": "LessThanThreshold",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "OKActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "Statistic": "Sum",
+        "ActionsEnabled": {
+          "Fn::If": [
+            "StartApplication",
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "DatabaseCpuAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "AWS/RDS",
+        "MetricName": "CPUUtilization",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "Database"
+            }
+          }
+        ],
+        "Threshold": 80,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Statistic": "Average",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ]
+      }
+    },
+    "DatabaseConnectionsAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "AWS/RDS",
+        "MetricName": "DatabaseConnections",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "Database"
+            }
+          }
+        ],
+        "Threshold": 80,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Statistic": "Maximum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ]
+      }
+    },
+    "DatabaseStorageAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "AWS/RDS",
+        "MetricName": "FreeStorageSpace",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "Database"
+            }
+          }
+        ],
+        "Threshold": 2147483648,
+        "ComparisonOperator": "LessThanThreshold",
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "TreatMissingData": "missing",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ]
+      }
+    },
+    "HealthyTargetAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "AWS/ApplicationELB",
+        "MetricName": "HealthyHostCount",
+        "Dimensions": [
+          {
+            "Name": "LoadBalancer",
+            "Value": {
+              "Fn::GetAtt": [
+                "LoadBalancer",
+                "LoadBalancerFullName"
+              ]
+            }
+          },
+          {
+            "Name": "TargetGroup",
+            "Value": {
+              "Fn::GetAtt": [
+                "Target",
+                "TargetGroupFullName"
+              ]
+            }
+          }
+        ],
+        "Threshold": 1,
+        "ComparisonOperator": "LessThanThreshold",
+        "Statistic": "Minimum",
+        "Period": 60,
+        "EvaluationPeriods": 2,
+        "TreatMissingData": "breaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ],
+        "ActionsEnabled": {
+          "Fn::If": [
+            "StartApplication",
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "ErrorFilter": {
+      "Type": "AWS::Logs::MetricFilter",
+      "Properties": {
+        "LogGroupName": {
+          "Ref": "WebLogs"
+        },
+        "FilterPattern": "{ $.level = \"error\" }",
+        "MetricTransformations": [
+          {
+            "MetricNamespace": "RenewRelay",
+            "MetricName": "CentralizedErrors",
+            "MetricValue": "1",
+            "DefaultValue": 0
+          }
+        ]
+      }
+    },
+    "CentralizedErrorAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "Namespace": "RenewRelay",
+        "MetricName": "CentralizedErrors",
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Statistic": "Sum",
+        "Period": 60,
+        "EvaluationPeriods": 1,
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "Alerts"
+          }
+        ]
+      }
+    },
+    "MigrationExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyName": "MigrationSecret",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "secretsmanager:GetSecretValue",
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Database",
+                      "MasterUserSecret.SecretArn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "MigrationTask": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Cpu": "512",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "MigrationExecutionRole",
+            "Arn"
+          ]
+        },
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole",
+            "Arn"
+          ]
+        },
+        "Volumes": [
+          {
+            "Name": "tmp"
+          }
+        ],
+        "ContainerDefinitions": [
+          {
+            "Name": "migration",
+            "Image": {
+              "Ref": "MigrationImageUri"
+            },
+            "Essential": true,
+            "ReadonlyRootFilesystem": true,
+            "User": "1000:1000",
+            "Command": [
+              "node",
+              "scripts/migrate.mjs"
+            ],
+            "Environment": [
+              {
+                "Name": "RENEWRELAY_ENV",
+                "Value": {
+                  "Ref": "Environment"
+                }
+              },
+              {
+                "Name": "PGHOST",
+                "Value": {
+                  "Fn::GetAtt": [
+                    "Database",
+                    "Endpoint.Address"
+                  ]
+                }
+              },
+              {
+                "Name": "PGDATABASE",
+                "Value": "renewrelay"
+              },
+              {
+                "Name": "PGUSER",
+                "Value": "renewrelay_migrator"
+              }
+            ],
+            "Secrets": [
+              {
+                "Name": "PGPASSWORD",
+                "ValueFrom": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "Database",
+                          "MasterUserSecret.SecretArn"
+                        ]
+                      },
+                      ":password::"
+                    ]
+                  ]
+                }
+              }
+            ],
+            "MountPoints": [
+              {
+                "SourceVolume": "tmp",
+                "ContainerPath": "/tmp",
+                "ReadOnly": false
+              }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WebLogs"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "app",
+                "mode": "blocking"
+              }
+            }
+          }
+        ],
+        "RuntimePlatform": {
+          "CpuArchitecture": {
+            "Ref": "CpuArchitecture"
+          },
+          "OperatingSystemFamily": "LINUX"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "OriginHost": {
+      "Value": {
+        "Fn::GetAtt": [
+          "LoadBalancer",
+          "DNSName"
+        ]
+      }
+    },
+    "DatabaseHost": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Database",
+          "Endpoint.Address"
+        ]
+      }
+    },
+    "MigrationSecretArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Database",
+          "MasterUserSecret.SecretArn"
+        ]
+      }
+    },
+    "AlertsTopicArn": {
+      "Value": {
+        "Ref": "Alerts"
+      }
+    },
+    "ClusterName": {
+      "Value": {
+        "Ref": "Cluster"
+      }
+    },
+    "MigrationTaskArn": {
+      "Value": {
+        "Ref": "MigrationTask"
+      }
+    }
+  },
+  "Conditions": {
+    "StartApplication": {
+      "Fn::Equals": [
+        {
+          "Ref": "ApplicationEnabled"
+        },
+        "true"
+      ]
+    }
+  }
+}
