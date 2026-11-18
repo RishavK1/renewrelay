@@ -12,6 +12,23 @@ The initial audit changed no application behavior. Subsequent authorized batches
 changed application code and added migrations 011–015 with regression coverage.
 Original observations and evidence remain below as historical records.
 
+## GitHub Actions removal follow-up
+
+**18 November 2026 · Owner-requested local verification workflow**
+
+GitHub Actions was removed after GitHub blocked hosted jobs due to an account
+billing lock. The earlier CI attempts remain recorded below as history. The owner
+does not need to resolve that billing lock to continue development or release
+verification locally. The repository keeps all quality, contract, build, migration,
+HTTP, audit, recovery and container check commands. Release operators must execute
+and retain their results; automatic remote enforcement remains absent.
+
+Control 132 stays PARTIALLY IMPLEMENTED. Existing control totals and previous test
+evidence are unchanged. This focused change removes CI configuration and updates
+operational documentation; it does not modify application runtime behavior.
+See [removal evidence](audit/actions-removal-2026-11-18.json) and
+[local release procedure](RELEASE_OPERATIONS.md).
+
 ## Consolidated batch 5 completion
 
 **18 November 2026 · Release preparation verified locally · Staging approval pending**

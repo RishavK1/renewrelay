@@ -23,9 +23,17 @@ Use Node 22.23.5, the committed npm lock, and PostgreSQL 18 for release checks.
    separate databases so terminal delivery fixtures cannot contaminate dispatch checks.
 6. `docker build --target runtime -t renewrelay:review .` and
    `docker build --target migration -t renewrelay-migration:review .`.
-7. Validate `infra/aws/backend.template.json` with cfn-lint 1.60.1. Remote CI,
-   image vulnerability scanning and target-platform license/distribution review
-   remain recorded acceptance items; local green gates do not prove remote execution.
+7. Validate `infra/aws/backend.template.json` with cfn-lint 1.60.1. Image
+   vulnerability scanning and target-platform license/distribution review remain
+   release obligations. Record local command results and the exact Git commit.
+
+GitHub Actions is intentionally removed at the owner's request. GitHub hosts source
+code only; pushes do not run repository-hosted checks. Use the local commands
+above before release, including `npm run test:containers` with the reviewed image
+tags. Keep the verification evidence with each release. Automated remote enforcement
+and unattended deployment are not implemented or required to unblock local work.
+These checks do not require purchasing GitHub Actions or another CI service.
+Cloud provisioning remains a separate approval/cost decision.
 
 Production uses the supported Webpack build path: local Linux container testing
 caught an unresolved external-module alias in the Turbopack standalone output.

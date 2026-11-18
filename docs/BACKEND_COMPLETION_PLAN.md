@@ -25,11 +25,12 @@ launch requires frontend/browser acceptance and business approvals.
   classifications, not a percentage of launch readiness.
 - The repeated 100-workspace/10,000-item fake-provider run accepts all 10,000
   reminders without duplicates. Actual HTTP/cloud/provider quota remains unverified.
-- RR-12 local artifacts/quality/contracts are delivered; remote CI and target-cloud
+- RR-12 local artifacts/quality/contracts are delivered; local release evidence and target-cloud
   acceptance remain verification gates. RR-13 telemetry/deployment definitions are
   delivered; actual ingestion, alarm delivery and operations are batch 6.
-- Repository is pushed to GitHub. Remote CI is blocked before execution by a
-  GitHub account billing lock; the owner must resolve it and rerun verification.
+- Repository is hosted on GitHub. GitHub Actions is removed by owner request;
+  local release checks replace that workflow. Resolving the GitHub billing lock
+  is not a project prerequisite. Remote CI enforcement remains absent.
 - RR-14 cross-system retention/deletion decisions remain open. Frontend/browser,
   business/legal, license distribution review and named operational owners remain.
 - [Release operations](RELEASE_OPERATIONS.md), [API inventory](API_CONTRACT.json),
@@ -81,7 +82,7 @@ cloud acceptance and owner/legal approvals remain recorded external gates.
 |---|---|---|
 | Build/runtime, RR-12 | Production web and worker artifacts, deliberate dependency installation, shared startup configuration validation, migration ordering and resource/pool budgets. | Clean install/build/start using the actual release artifact and production dependency mode. |
 | Developer quality | Proportionate lint and checks for TypeScript and MJS fixtures. Machine-readable API inventory/OpenAPI or equivalent with drift checks. Maintain readable module boundaries and reuse. | Green local gates, complete endpoint inventory, updated documentation and no route/schema mismatch. |
-| Repository/CI | Establish actual version history if absent, reproducible migration checks and automated regression gates. Current-source secret scanning, history scanning when history exists, dependency and license/notice inventory. | Local history and source checks; remote pipeline/branch rules are verified after the repository is connected. No new remote repository or publication is implied by this plan. |
+| Repository/CI | Establish actual version history if absent, reproducible migration checks and automated regression gates. Current-source secret scanning, history scanning when history exists, dependency and license/notice inventory. | Local history and repeatable command checks; GitHub Actions is intentionally removed. Remote enforcement is absent; retain local release evidence. No new remote repository or publication is implied by this plan. |
 | Observability, RR-13 implementation | Redacted structured logs, centralized-error integration, API/DB/worker latency and error metrics, queue age, uncertain/failed jobs, pending billing events, worker heartbeat and actionable alert definitions. Schema-aware readiness. | Local metric/error fixtures, redaction tests and alert-rule tests. Real alert delivery and ownership are verified in batch 6. |
 | Deployable infrastructure | Definitions for the accepted cloud/edge architecture, private database connectivity, TLS/secret handling, isolated environments and production-only configuration. | Validated local definitions and documented setup. Provisioning, costs and deployment require the actual environment and relevant authorization. |
 | Recovery and maintenance | Compatible release/schema rollback procedure, backup/PITR plan, restore reconciliation, incident/breach playbook, support contacts and recurring audit/patch/restore cadence. | Updated runbooks, local recovery rehearsal and named approval/evidence slots. Measured cloud recovery stays in batch 6. |

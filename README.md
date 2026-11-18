@@ -359,3 +359,8 @@ See [release and operations](docs/RELEASE_OPERATIONS.md), the
 [machine-readable API inventory](docs/API_CONTRACT.json) and the
 [current audit](docs/AUDIT_REPORT.md). This is local release preparation; actual
 cloud/provider acceptance and frontend/browser verification remain pending.
+
+GitHub Actions is intentionally removed. GitHub is used for source hosting; run
+`npm run check` and the release/build/integration checks in
+[release operations](docs/RELEASE_OPERATIONS.md) locally before promoting a release.
+No paid CI service is required for this workflow.
