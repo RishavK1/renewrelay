@@ -1,0 +1,83 @@
+{
+  "status": "PROPOSED_NOT_SELECTED",
+  "method": "WCAG sRGB relative luminance; normal text minimum 4.5:1. Only listed pairs checked.",
+  "palettes": [
+    {
+      "id": 1,
+      "name": "Ink & Sky",
+      "mood": "Calm, precise, quietly premium",
+      "base": "#FCFBF8",
+      "ink": "#071A31",
+      "accent": "#C3DFFE",
+      "button": "#071A31",
+      "buttonText": "#FCFBF8",
+      "muted": "#526171",
+      "border": "#D8DFE5",
+      "accentName": "Sky",
+      "note": "Recommended: closest to your Calendly + Mobbin references.",
+      "contrast": {
+        "body": 16.9,
+        "mutedText": 6.14,
+        "button": 16.9
+      }
+    },
+    {
+      "id": 2,
+      "name": "Cream & Ember",
+      "mood": "Warm, confident, approachable",
+      "base": "#F4EFE6",
+      "ink": "#121212",
+      "accent": "#D4511B",
+      "button": "#B94316",
+      "buttonText": "#FFFFFF",
+      "muted": "#60594F",
+      "border": "#DCD3C7",
+      "accentName": "Ember",
+      "note": "Original orange for accents; darker ember for readable CTAs.",
+      "contrast": {
+        "body": 16.36,
+        "mutedText": 6.03,
+        "button": 5.42
+      }
+    },
+    {
+      "id": 3,
+      "name": "Forest & Lime",
+      "mood": "Fresh, grounded, distinctive",
+      "base": "#F7FAF4",
+      "ink": "#163923",
+      "accent": "#C5EE55",
+      "button": "#C5EE55",
+      "buttonText": "#163923",
+      "muted": "#52634F",
+      "border": "#D6E0D0",
+      "accentName": "Lime",
+      "note": "A light product interface with lime reserved for key actions.",
+      "contrast": {
+        "body": 12.13,
+        "mutedText": 6.12,
+        "button": 9.57
+      }
+    },
+    {
+      "id": 4,
+      "name": "Violet & Citrus",
+      "mood": "Expressive, modern, controlled",
+      "base": "#F5F3FF",
+      "ink": "#211B36",
+      "accent": "#834DFB",
+      "button": "#834DFB",
+      "buttonText": "#FFFFFF",
+      "muted": "#655E75",
+      "border": "#DCD7EA",
+      "accentName": "Violet",
+      "support": "#F0E100",
+      "note": "Citrus is a small supporting accent, never a second primary CTA.",
+      "contrast": {
+        "body": 15.02,
+        "mutedText": 5.61,
+        "button": 4.75
+      }
+    }
+  ]
+}

@@ -36,3 +36,20 @@ Use .agents/skills/renewrelay-ui/SKILL.md for every UI task. Read the pinned
 frontend-design reference through that skill. Review against UI-01–UI-20 and
 record rendered evidence in UI_REVIEW_LOG.md. Document deliberate token/component
 exceptions and affected screens rather than quietly introducing one-off values.
+
+## Reference preparation — 18 November 2026
+
+The [frontend preparation plan](FRONTEND_PREPARATION_PLAN.md) and
+[reference analysis](design/REFERENCE_ANALYSIS.md) document the user-supplied
+Calendly, Mobbin, Quantalog, Aceternity and Instagram material.
+
+Four [rendered palette studies](design/palettes/renewrelay-four-palettes.png)
+are available; [proposed tokens and contrast pairs](design/palettes/palettes.json)
+are machine-readable. Ink & Sky is recommended; selection remains pending.
+The studies do not establish a final typography choice or completed screen UI.
+Proposed spacing, shape, control and motion roles are in the preparation plan;
+record selected values here before adopting them across screens.
+
+shadcn, Aceternity, 21st, Motion and Lucide have proposed roles, not implemented
+component inventory entries. Tool setup status is recorded in the preparation
+plan. Do not infer that 21st authentication or frontend installation is complete.

@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-18",
+  "scope": "reference analysis, palette artifacts, reusable UI skill, MCP configuration; no frontend implementation",
+  "inputs": "../design/references/attachment-manifest.json",
+  "paletteStatus": "PROPOSED_NOT_SELECTED",
+  "paletteEvidence": "../design/palettes/palettes.json",
+  "visualEvidence": "Palette board rendered and inspected; live reference browser inspection unavailable. Public page text and supplied screenshots/MD used.",
+  "shadcn": {
+    "version": "4.23.0",
+    "scope": "global Codex MCP config, not application package",
+    "smoke": {
+      "initialize": true,
+      "tools": [
+        "get_project_registries",
+        "list_items_in_registries",
+        "search_items_in_registries",
+        "view_items_in_registries",
+        "get_item_examples_from_registries",
+        "get_add_command_for_items",
+        "get_audit_checklist"
+      ]
+    }
+  },
+  "twentyfirst": {
+    "url": "https://21st.dev/api/mcp",
+    "configured": true,
+    "authenticated": false,
+    "connectionVerified": false,
+    "credentialValuesRecorded": false
+  },
+  "runtimePackagesChanged": false,
+  "applicationSourceChanged": false,
+  "screenUIControls": "NOT REVIEWED; no screen-level completion claim",
+  "providerAndProductionAcceptance": "not performed; unchanged",
+  "paidServicesPurchased": false,
+  "checks": {
+    "skillValidator": "PASS",
+    "documentLinks": "PASS",
+    "pngIntegrity": "PASS",
+    "textPairs": "PASS: all listed body, muted and CTA pairs >=4.5:1",
+    "gitDiffCheck": "PASS",
+    "secretScan": "PASS: targeted patterns, five history commits scanned, no matches; not exhaustive"
+  }
+}

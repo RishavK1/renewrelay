@@ -1,0 +1,30 @@
+[
+  {
+    "name": "calendly",
+    "attachment": "/Users/rishav/.codex/attachments/58196314-9936-4ef8-a382-92ce224abc0b/Pasted text.txt",
+    "lines": 223,
+    "sha256": "104c60ac350d783f9dba4563e2b75b2b3610be8151d454470aaa5e4be31304a9",
+    "readInFull": true
+  },
+  {
+    "name": "quantalog",
+    "attachment": "/Users/rishav/.codex/attachments/3e98cd4c-6a74-4677-b5cd-745addf23e5a/Pasted text.txt",
+    "lines": 257,
+    "sha256": "1d199d18a5615d70e44023b31bfd5cf34f9ddf41a92bb67b36479d0ee2b1f1f7",
+    "readInFull": true
+  },
+  {
+    "name": "background-cubes-grid",
+    "attachment": "/Users/rishav/.codex/attachments/5ea3cb3e-d884-4b60-bcba-0373c9a15ac3/Pasted text.txt",
+    "lines": 1144,
+    "sha256": "1ff88a8436e7ae958bb043212c5e69f555ff33235f33a3e6e06a0682bf88e72e",
+    "readInFull": true
+  },
+  {
+    "name": "mobbin",
+    "attachment": "/Users/rishav/.codex/attachments/cdbf96c0-fe0f-4a87-8c8d-14decbadc9f6/Pasted text.txt",
+    "lines": 209,
+    "sha256": "c583d80460c77b2df61705d22f572f9638981c45158bf651bc7f19233fbe1d65",
+    "readInFull": true
+  }
+]

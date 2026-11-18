@@ -33,6 +33,11 @@ the user's existing instructions authorize it; do not create repetitive approval
 handoffs. Once selected, record concrete choices in docs/DESIGN_SYSTEM.md and
 reuse them. A component-level task should inherit existing choices instead.
 
+For new pages, visual-system choices or source-component selection, read
+[reference design direction](references/design-direction.md). It preserves the
+user's supplied design references, component-fidelity expectations and known
+source issues without loading every attachment for each small edit.
+
 ## Use one maintained visual contract
 
 Maintain named roles for color, typography, spacing, container/grid, borders,
