@@ -3,22 +3,22 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=22.23.5 <23"
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env node_modules/next/dist/bin/next dev apps/web",
-    "build": "next build apps/web",
+    "build": "next build --webpack apps/web",
     "start": "node --env-file-if-exists=.env node_modules/next/dist/bin/next start apps/web",
     "worker": "node --import tsx apps/worker/main.ts",
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts tests/*.test.mjs",
     "test:e2e": "node --import tsx --test tests/*.e2e.mjs",
     "test:restore": "node --import tsx scripts/test-restore.mjs",
     "test:dispatch-load": "node scripts/with-test-database.mjs load",
-    "lint": "eslint scripts tests *.mjs --max-warnings=0 && node scripts/lint-typescript.mjs",
-    "build:release": "npm run build && npm run build:runtime && node scripts/prepare-release.mjs",
+    "lint": "eslint scripts tests packages *.mjs --max-warnings=0 && node scripts/lint-typescript.mjs",
+    "build:release": "npm run build && npm run build:runtime && node scripts/prepare-release.mjs && node scripts/install-release.mjs",
     "start:release": "node release/dist/web.mjs",
     "worker:release": "node release/dist/worker.mjs",
     "contracts:generate": "node --import tsx scripts/api-contracts.mjs --write",
@@ -30,7 +30,8 @@
     "test:audit": "node scripts/with-test-database.mjs audit",
     "test:release": "node scripts/test-release.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
-    "test:containers": "node scripts/test-containers.mjs"
+    "test:containers": "node scripts/test-containers.mjs",
+    "release:install": "node scripts/install-release.mjs"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.25",

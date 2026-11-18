@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
-          node-version: "22.20.0"
+          node-version: "22.23.5"
           cache: npm
       - run: npm ci
       - run: npm run db:generate
@@ -46,8 +46,6 @@ jobs:
           docker exec -i renewrelay-ci-postgres psql -U renewrelay_migrator -d renewrelay_audit_ci -v ON_ERROR_STOP=1 < packages/db/grant-runtime.sql
       - run: npm run test:migrations
       - run: npm run build:release
-      - run: npm ci --omit=dev --omit=peer --ignore-scripts
-        working-directory: release
       - name: Test production artifacts and restore
         run: |
           node -e 'const fs=require("node:fs"),c=require("node:crypto");fs.appendFileSync(process.env.GITHUB_ENV,"BETTER_AUTH_SECRET="+c.randomBytes(48).toString("base64url")+"\nINVITE_ENCRYPTION_KEY="+c.randomBytes(32).toString("base64url")+"\n")'

@@ -7,14 +7,16 @@ alone. The frontend and browser acceptance are separate.
 
 ## Build and verify
 
-Use Node 22.20.0, the committed npm lock, and PostgreSQL 18 for release checks.
+Use Node 22.23.5, the committed npm lock, and PostgreSQL 18 for release checks.
 
 1. `npm ci && npm run db:generate`
 2. `npm run check` — JavaScript ESLint; strict TypeScript/unused-symbol and AST
    quality checks; unit tests; API contract drift; targeted credential scan.
 3. `npm run licenses` and `npm audit --audit-level=moderate`. Review license
    exceptions in docs/audit/dependency-licenses-batch5-2026-11-18.json.
-4. `npm run build:release`; then `cd release && npm ci --omit=dev --omit=peer --ignore-scripts`.
+4. `npm run build:release` generates standalone/compiled artifacts and overlays
+   a separate locked production install. Never run npm ci inside release: it
+   deletes Next-generated traced aliases. Use npm run release:install for an overlay.
 5. With a private synthetic local environment loaded, apply migrations and grants.
    Run `RR_TEST_NEXT_MODE=release npm run test:e2e`, `npm run test:migrations`,
    `npm run test:restore` and `npm run test:audit`. Audit and load commands create
@@ -25,6 +27,8 @@ Use Node 22.20.0, the committed npm lock, and PostgreSQL 18 for release checks.
    image vulnerability scanning and target-platform license/distribution review
    remain recorded acceptance items; local green gates do not prove remote execution.
 
+Production uses the supported Webpack build path: local Linux container testing
+caught an unresolved external-module alias in the Turbopack standalone output.
 The runtime image has only production npm dependencies, a compiled ESM worker,
 Next standalone server, RDS CA certificates and notices. Web's generated CommonJS
 server has its own package boundary. It runs as UID/GID 10001. The migration image
@@ -75,6 +79,10 @@ require separately scoped kms:Decrypt permissions if selected.
 4. Provision random, distinct app/auth/worker DB passwords through a secure operator
    session as the migration principal. Grant no owner/superuser/BYPASSRLS access.
    Use grant-runtime.sql. The template does not invent or expose those passwords.
+   The migration launcher maps verified TLS to the engine-specific
+   sslmode=require, sslaccept=strict and bundled sslcert options; psql retains
+   verify-full with PGSSLROOTCERT. Never pass runtime pg URL options unchanged
+   to a different migration TLS parser.
 5. Populate separate web/worker JSON secrets with the keys listed in template
    parameter descriptions. Database URLs must identify the matching runtime role
    and set sslmode=verify-full. NODE_EXTRA_CA_CERTS trusts the included RDS bundle;
@@ -169,3 +177,7 @@ update source fingerprints. After incidents: record corrective actions and retes
 - [CloudWatch EMF](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html)
 - [ECS execution roles](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html)
 - [Cloudflare request headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/)
+
+- [Prisma PostgreSQL TLS options](https://docs.prisma.io/docs/orm/v7/core-concepts/supported-databases/postgresql)
+
+- [Node 22.23.5 security release](https://nodejs.org/en/blog/release/v22.23.5/)

@@ -6,7 +6,7 @@ const config: NextConfig = {
   outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
   logging: { incomingRequests: { ignore: [/\/api\/auth\//, /\/d(?:\/|$)/] } },
-  serverExternalPackages: ["nodemailer", "pg"],
+  serverExternalPackages: ["nodemailer", "pg", "@prisma/client", "@prisma/adapter-pg"],
   async headers() {
     return [{
       source: "/:path*",

@@ -4,7 +4,7 @@ The API covers staff identity, workspaces, invitations, clients, contacts and th
 
 ## Run locally
 
-Use Node.js 22.18 or later, npm, and Docker Compose.
+Use Node.js 22.23.5 in the supported 22.x line, npm, and Docker Compose.
 
 1. Run `npm ci` and `npm run db:generate`.
 2. Copy `.env.example` to `.env`. Generate separate values for `BETTER_AUTH_SECRET` and `INVITE_ENCRYPTION_KEY` by running this command twice. Do not share or commit the values.

@@ -1,35 +1,37 @@
 # RenewRelay remaining delivery plan
 
-**18 November 2026 · Two consolidated backend batches remaining**
+**18 November 2026 · One backend batch remaining**
 
 This plan replaces the earlier suggestion to deliver individual security fixes in
-small batches. Completed batches 1–4 remain complete within their recorded local
-scope. The remaining delivery batches are 5 and 6. This is a work organization plan,
+small batches. Completed batches 1–5 remain complete within their recorded local
+scope. The remaining delivery batch is 6. This is a work organization plan,
 not a time estimate or a production-readiness certificate.
 
-One remaining batch focuses on release implementation and synthetic verification. One covers actual
-staging, provider and launch acceptance. Frontend implementation is a separate
-workstream after the backend contract and local verification are ready. Public
-launch also requires frontend/browser acceptance and business approvals.
+Batch 5 release preparation is complete locally. Batch 6 covers actual staging,
+provider and launch acceptance. Frontend implementation remains separate. Public
+launch requires frontend/browser acceptance and business approvals.
 
 ## Current position
 
 - All seven original counterexamples RR-01–RR-07 pass locally. Do not reopen their
   original fix work without new evidence. Retain and extend their regression tests.
-- Batch 4 passes typecheck, production build, 17 unit tests, 41 HTTP scenarios,
-  fresh 15-migration deployment, a 13-to-15 upgrade and logical restore.
-- The repeated 100-workspace/10,000-item fake-provider benchmark accepted all
-  10,000 reminders without duplicate acceptances. Reminder p99 was 118 seconds;
-  domain queue-read p95 was 8 ms, excluding HTTP/network overhead.
-- The current register has 45 PASS, 3 FAIL, 58 PARTIALLY IMPLEMENTED, 26 NEEDS
-  MANUAL VERIFICATION and 18 NOT APPLICABLE entries. The 87 open controls include
-  future UI, infrastructure, policy and evidence requirements, rather than 87 bugs.
-- RR-08/09/10/11/15 are locally resolved. RR-14 export/lifecycle implementation is
-  delivered; approved cross-system retention/deletion policy remains open.
-  RR-12/13 release and operational work remains in batches 5–6.
-- Batch 4 contract and evidence: [API documentation](BATCH4_API.md),
-  [data lifecycle](DATA_LIFECYCLE.md),
-  [verification manifest](audit/verification-batch4-2026-11-18.json).
+- Batch 5 passes quality/type checks, 22 unit tests, 43 HTTP scenarios against
+  compiled production artifacts, 16 fresh migrations, previous-schema upgrade,
+  startup negative tests and logical restore on local PostgreSQL 18.7.
+- Node 22.23.5 digest-pinned runtime and migration containers build and pass local
+  non-root/read-only-filesystem smoke checks. No development runner is required.
+- The current register has 51 PASS, 0 FAIL, 58 PARTIALLY IMPLEMENTED, 23 NEEDS
+  MANUAL VERIFICATION and 18 NOT APPLICABLE entries. These are scoped evidence
+  classifications, not a percentage of launch readiness.
+- The repeated 100-workspace/10,000-item fake-provider run accepts all 10,000
+  reminders without duplicates. Actual HTTP/cloud/provider quota remains unverified.
+- RR-12 local artifacts/quality/contracts are delivered; remote CI and target-cloud
+  acceptance remain verification gates. RR-13 telemetry/deployment definitions are
+  delivered; actual ingestion, alarm delivery and operations are batch 6.
+- RR-14 cross-system retention/deletion decisions remain open. Frontend/browser,
+  business/legal, license distribution review and named operational owners remain.
+- [Release operations](RELEASE_OPERATIONS.md), [API inventory](API_CONTRACT.json),
+  [batch 5 evidence](audit/verification-batch5-2026-11-18.json).
 
 Evidence is in [the audit report](AUDIT_REPORT.md) and the
 [control register](PRODUCTION_CHECKLIST.md).
@@ -39,7 +41,7 @@ Evidence is in [the audit report](AUDIT_REPORT.md) and the
 | Batch | Combined scope | Deliverable | Dependencies |
 |---|---|---|---|
 | 4. Complete locally | Identity/security, remaining workflow contracts, mail correctness, DB integrity, export and data lifecycle implementation | A coherent API suitable for frontend integration, with negative/concurrency tests and documented policy decisions | Mostly synthetic. Retention and refund decisions require accountable owners before irreversible behavior is enabled. |
-| 5. Prepare and verify the release | Build artifacts, configuration, CI/lint/contracts, telemetry, deployment definitions, recovery runbooks and full local/spec review | A reproducible backend release candidate and a staged verification checklist | Local work can proceed. Remote CI and cloud integrations need the selected repository/accounts. |
+| 5. Complete locally | Build artifacts, configuration, CI/lint/contracts, telemetry, deployment definitions, recovery runbooks and full local/spec review | A reproducible backend release candidate and a staged verification checklist | Local work can proceed. Remote CI and cloud integrations need the selected repository/accounts. |
 | 6. Verify staging and launch conditions | Deployed security boundaries, provider acceptance, PostgreSQL 18, HTTP load, alerts, rollback/PITR and business/legal acceptance | Recorded backend staging results and a conditional launch decision | Needs real staging resources, vendor test credentials, sending domain and business decisions. Public approval also waits for frontend acceptance. |
 
 Each batch can contain several focused changes and internal test cycles. Progress
@@ -68,7 +70,10 @@ Product policy questions should be collected together as concrete choices while
 independent coding proceeds. Technical defaults can be proposed, but legal,
 financial-retention and refund decisions cannot be silently treated as approved.
 
-## Batch 5 · Prepare and verify the release
+## Batch 5 · Complete locally
+
+The following agreed scope is delivered within local verification. Remote CI,
+cloud acceptance and owner/legal approvals remain recorded external gates.
 
 | Area | Remaining work | Completion evidence |
 |---|---|---|
@@ -122,7 +127,7 @@ Reassess their controls only if product scope changes.
 ## Historical pre-batch-4 open-control routing
 
 The table below preserves routing of the 97 controls that were open before
-batch 4. It is historical; the current register has 87 open controls. Completed
+batch 4. It is historical; the current register has 81 open controls. Completed
 local batch 4 work no longer requires another implementation batch. Each
 remaining original control retains its primary frontend, release or external
 workstream; mixed controls may still require evidence in batches 5–6. Mixed implementation/staging/UI controls can need evidence from more

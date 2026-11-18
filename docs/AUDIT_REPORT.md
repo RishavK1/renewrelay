@@ -12,6 +12,61 @@ The initial audit changed no application behavior. Subsequent authorized batches
 changed application code and added migrations 011–015 with regression coverage.
 Original observations and evidence remain below as historical records.
 
+## Consolidated batch 5 completion
+
+**18 November 2026 · Release preparation verified locally · Staging approval pending**
+
+See the [source/check manifest](audit/verification-batch5-2026-11-18.json),
+[release runbook](RELEASE_OPERATIONS.md), [API inventory](API_CONTRACT.json) and
+[current register](PRODUCTION_CHECKLIST.md). Earlier dated observations below
+remain historical; this section supplies the current disposition.
+
+| Area | Delivered and locally verified | Remaining acceptance |
+|---|---|---|
+| RR-12 release foundation | Node 22.23.5, standalone web plus compiled worker/launcher, locked production dependency overlay, isolated migration/grant image, non-root read-only runtime; no tsx runtime dependency. Lint/strict TS/AST checks and generated request-schema inventory cover 62 method/path entries with source drift checks. | Execute selected remote pipeline, protected branches, target-platform image scan and full license distribution review. |
+| Startup and compatibility | Configuration, runtime roles and schema/grants checked before startup; missing/invalid configuration exits nonzero. Readiness failure/recovery tested. Sequential queries replace concurrent use of transaction connections. Migration 016 adds operational indexes. | Measure deployed migration window, pools, TLS and compatible rollout/rollback. |
+| RR-13 telemetry implementation | Redacted request/error events and correlation IDs; CloudWatch EMF API/DB/worker metrics; bounded queue/billing age reads; heartbeat; AWS log/SNS/alarm definitions validated with cfn-lint and fixtures. | Real ingestion, extraction, permissions, subscriptions, alert acknowledgment and managed outages remain batch 6. |
+| Infrastructure and recovery | Parameterized private Fargate/RDS 18/TLS/Secrets Manager/ALB deployment, side effects off, tasks initially stopped, single-worker rate budget, cost alerts and isolated migration task. Runbook covers promotion/rollback, incident handling and recurring maintenance. | Provision approved network/accounts/region/retention; verify provider quota, PITR, RPO/RTO and operational owners. |
+| Repository/supply chain | Local history initialized; targeted current/history scan passes without exposing values. Locked license inventory and notices generated. npm advisory scan reports zero known advisories at review time. | Remote CI execution and branch protections are separately recorded. 19 license metadata/distribution cases, target OS notices and image advisory review remain explicit gates. |
+| Spec/control review | All 150 controls revisited; R1–R11 and commercial rules retain regression coverage. All seven original adverse counterexamples pass in a dedicated clean database. | Broader route/role, deployed/browser, vendor and legal acceptance are not inferred from local tests. |
+
+**Verification:** 22 unit tests, 43 HTTP scenarios (44 including the parent),
+quality/type checks, production build, all 16 migrations on PostgreSQL 18.7,
+15-to-16 upgrade preserving a business record, logical restore preserving 46 cycles,
+11 responses and 328 audit events with revoked credentials/outbound quarantine,
+startup negatives, and non-root read-only container smoke tests pass. Runtime
+containers use Node 22.23.5. No live provider keys, external sends or charges were used.
+
+The repeated [local load evidence](audit/dispatch-load-batch5-2026-11-18.json)
+records 100 workspaces, 10,000 items and 10,000 accepted fake-provider reminders,
+zero duplicate acceptances, reminder p99 117,841 ms and domain queue-read p95
+25 ms. Scheduler sweep took 2,144 ms. These timings exclude actual HTTP/network,
+cloud workloads and provider quota. Queue age metrics are measured independently
+from this healthy-provider benchmark.
+
+Packaging tests found and corrected the CommonJS/ESM generated-server boundary,
+a Linux standalone external-module alias problem (release builds use Webpack),
+production-install deletion of traced aliases, startup failure not exiting promptly,
+and the migration engine OpenSSL mismatch. The final artifact regressions pass;
+these findings are retained as evidence of why testing the artifact matters.
+Optional Prisma/TypeScript peers may remain installed by npm; production entry
+points execute compiled code and do not need a development runner.
+
+The register is now **51 PASS, 0 FAIL, 58 PARTIALLY IMPLEMENTED, 23 NEEDS MANUAL
+VERIFICATION, 18 NOT APPLICABLE**. Monitoring controls moved from FAIL to PARTIALLY
+IMPLEMENTED because source/local fixtures now exist; they are not marked deployed.
+RR-12/13 local implementation is delivered. RR-14 policy/vendor/backup retention
+and release, frontend, finance/legal and operational acceptance remain open.
+
+Node was updated after checking the current security release.
+[Node 22.23.5 release](https://nodejs.org/en/blog/release/v22.23.5/).
+TLS configuration respects the different node-postgres/libpq and Prisma migration
+engine options; actual RDS hostname/CA validation remains staging work.
+[Prisma PostgreSQL TLS options](https://docs.prisma.io/docs/orm/v7/core-concepts/supported-databases/postgresql).
+
+**Next:** batch 6 staging/provider acceptance; frontend remains separate. This is
+not an unconditional production or legal-compliance signoff.
+
 ## Consolidated batch 4 completion
 
 **18 November 2026 · Local implementation complete · External release gates open**
@@ -71,7 +126,7 @@ mutable current cycle dates cannot prove historical values. Legacy hashes migrat
 only after a successful password sign-in. Backups, vendor erasure and financial
 retention are not silently changed by this rollout.
 
-The next delivery is **batch 5, release preparation and verification**; batch 6
+At that checkpoint the next delivery was batch 5; the current completion is above. Batch 6
 covers real staging/providers/launch conditions. Frontend remains separate.
 
 ## Dispatch and calendar remediation follow-up
