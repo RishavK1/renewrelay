@@ -1,5 +1,5 @@
 {
-  "status": "PROPOSED_NOT_SELECTED",
+  "status": "PALETTE_1_SELECTED",
   "method": "WCAG sRGB relative luminance; normal text minimum 4.5:1. Only listed pairs checked.",
   "palettes": [
     {
@@ -79,5 +79,7 @@
         "button": 4.75
       }
     }
-  ]
+  ],
+  "selectedPaletteId": 1,
+  "selectionDate": "2026-11-18"
 }

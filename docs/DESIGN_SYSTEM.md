@@ -1,8 +1,9 @@
 # RenewRelay shared design system
 
-Status: design foundation not selected. This document establishes the maintained
-source of truth; it does not claim that typography, palette or UI components have
-already been designed or approved. Research is in FRONTEND_UI_QUALITY_CHECKLIST.md.
+Status: Ink & Sky palette selected by the user on 18 November 2026. Navbar/hero
+design specified for review; frontend implementation pending. This document establishes the maintained
+source of truth; palette approval is recorded below. Typography and UI component
+recommendations have not been implemented or visually verified. Research is in FRONTEND_UI_QUALITY_CHECKLIST.md.
 
 ## Established product constraints
 
@@ -45,7 +46,8 @@ Calendly, Mobbin, Quantalog, Aceternity and Instagram material.
 
 Four [rendered palette studies](design/palettes/renewrelay-four-palettes.png)
 are available; [proposed tokens and contrast pairs](design/palettes/palettes.json)
-are machine-readable. Ink & Sky is recommended; selection remains pending.
+are machine-readable. Ink & Sky is selected. The other three studies are retained as historical
+alternatives, not active theme choices.
 The studies do not establish a final typography choice or completed screen UI.
 Proposed spacing, shape, control and motion roles are in the preparation plan;
 record selected values here before adopting them across screens.
@@ -53,3 +55,14 @@ record selected values here before adopting them across screens.
 shadcn, Aceternity, 21st, Motion and Lucide have proposed roles, not implemented
 component inventory entries. Tool setup status is recorded in the preparation
 plan. Do not infer that 21st authentication or frontend installation is complete.
+
+## Selected palette and current design scope
+
+User-approved palette: Snow #FCFBF8, Ink #071A31, Sky #C3DFFE, with white
+surfaces, muted #526171 and border #D8DFE5. Preserve these roles across pages.
+See [navbar and hero design](design/NAVBAR_HERO_DESIGN.md) for the current
+recommendation: centered typography, locally served Manrope, bundled Lucide,
+and isometric Aceternity cubes. Those details are proposed for review; only the
+palette has explicit user selection. Do not implement other sections from this
+design task. Browser font requests must stay on our origin; no Google Fonts API
+or CDN font loading. Retain font/icon licenses when actual assets are imported.

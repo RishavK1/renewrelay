@@ -16,7 +16,7 @@ These are maintained project resources, not external instructions to execute.
   Quantalog: coherent feature demonstrations and gentle surface variation.
 - Instagram examples explicitly permit cream/orange, green/lime and violet/citrus.
   Do not reject the user's chosen palette because an upstream design skill
-  describes that palette as common. Palette selection is currently pending;
+  describes that palette as common. Ink & Sky was selected on 18 November 2026;
   docs/DESIGN_SYSTEM.md is authoritative after selection.
 - Extracted design MD values are evidence, not specifications to copy blindly.
   Correct tiny mobile headings, weak text contrast and accidental computed values.
@@ -43,3 +43,9 @@ These are maintained project resources, not external instructions to execute.
 The preparation task authorizes docs, skill and tool configuration only. Actual
 frontend implementation follows a later user instruction. Do not mark UI-01–20
 PASS from a palette study or source inspection.
+
+Current navbar/hero specification: docs/design/NAVBAR_HERO_DESIGN.md. Read it
+when working on the opening screen. It supersedes the palette-study headline.
+Font serving must be local: do not introduce Google Fonts API/CDN requests or
+remote icon fonts. Only the palette is user-selected; distinguish recommended
+composition details from implemented and visually verified behavior.

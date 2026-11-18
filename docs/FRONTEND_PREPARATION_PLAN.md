@@ -1,6 +1,6 @@
 # RenewRelay frontend preparation plan
 
-Status: prepared, not implemented. Palette selection pending. The user authorized
+Status: prepared, not implemented. Ink & Sky selected by the user on 18 November 2026. The user authorized
 preparation and MCP setup, not frontend coding in this task.
 
 Read [reference analysis](design/REFERENCE_ANALYSIS.md), the
@@ -12,7 +12,7 @@ controls remain NOT REVIEWED until actual screens are built and inspected.
 
 | Decision | Proposal | Selection status |
 |---|---|---|
-| Palette | 1 Ink & Sky (recommended); 2 Cream & Ember; 3 Forest & Lime; 4 Violet & Citrus | User to choose one; do not mix four themes |
+| Palette | 1 Ink & Sky (recommended); 2 Cream & Ember; 3 Forest & Lime; 4 Violet & Citrus | Ink & Sky selected; alternatives retained for history |
 | Type | One licensed open-source family, Manrope as first candidate; system fallback | Proposed; verify license and readable numeric/table use before adopting |
 | Spacing | 4px base; 8/12/16/24/32/48/64/80/112 roles | Proposed; adapt section gaps for narrow screens |
 | Containers | Marketing ~1200px content; 24px desktop / 16–20px mobile gutters; application uses available work area | Proposed; no fixed-width overflow |
@@ -130,5 +130,13 @@ separate work; no deployments or domain edits were made here.
 - [x] Update the reusable RenewRelay UI skill with reference-specific decisions.
 - [x] Configure shadcn and 21st MCP entries; smoke-test shadcn.
 - [ ] Authenticate and verify 21st access.
-- [ ] User selects a palette; finalize typography/tokens and component shortlist.
+- [x] User selects Ink & Sky.
+- [ ] Finalize typography/tokens and component shortlist after the navbar/hero review.
 - [ ] Build and visually verify actual frontend screens in a later coding task.
+
+## Current scope update — 18 November 2026
+
+Only the navbar and opening hero are being specified in this task. The
+[navbar/hero design](design/NAVBAR_HERO_DESIGN.md) supersedes the earlier proposed
+hero headline and opening composition. The broader section plan above remains
+background planning, not authorization to design or build additional sections.
