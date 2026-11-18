@@ -140,3 +140,21 @@ Only the navbar and opening hero are being specified in this task. The
 [navbar/hero design](design/NAVBAR_HERO_DESIGN.md) supersedes the earlier proposed
 hero headline and opening composition. The broader section plan above remains
 background planning, not authorization to design or build additional sections.
+
+## Sections 2 and 3 — current planning update
+
+The [detailed two-section plan](design/SECTIONS_02_03_PLAN.md) supersedes the broad
+rows 2–4 for the immediate next work: section 2 is the product preview; section 3
+is the practical workflow. The former standalone problem section is omitted and
+its relevant context is expressed in the product/workflow copy. Later section
+numbering must be revised before further work; do not build a duplicate workflow.
+This update is planning only; implementation awaits the user's next instruction.
+
+## Sections 4 and 5 — current planning update
+
+The [research-backed sections 4–5 plan](design/SECTIONS_04_05_PLAN.md) now defines
+these immediate next sections: scattered context → coherent renewal record, then
+agency exception/follow-up/invoicing/revision controls. This supersedes the old
+rows 5–7 where they duplicate these themes. Remaining pricing/FAQ/closing content
+must be planned separately; do not implement an old row as a duplicate section.
+This is planning only, awaiting a subsequent implementation instruction.

@@ -10,3 +10,5 @@ apps/web/next-env.d.ts
 
 dist/
 release/
+
+apps/marketing/next-env.d.ts

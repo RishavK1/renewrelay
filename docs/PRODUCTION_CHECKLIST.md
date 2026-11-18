@@ -71,7 +71,7 @@ Frontend work and external approvals are identified separately there.
 | 012. Block non-essential tracking before consent where required. | [ ] NEEDS MANUAL VERIFICATION | Medium | docs/audit/verification-2026-11-18.json (E00 inventory) | No analytics or session-replay SDK is currently configured in application source. | Verify deployed scripts and gate any future non-essential tracking. | M |
 | 013. Make Accept and Reject equally accessible. | [ ] NEEDS MANUAL VERIFICATION | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | A consent UI has not been built. | Verify equal accept/reject access if consent is required. | S |
 | 014. Allow users to change preferences from the footer. | [ ] NEEDS MANUAL VERIFICATION | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | Preference management is frontend work. | Add preference access when the consent design is approved. | S |
-| 015. Self-host fonts where practical. | [ ] NOT APPLICABLE | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | The API-only build serves no product fonts. | Reassess when frontend typography is implemented. | S |
+| 015. Self-host fonts where practical. | [ ] PARTIALLY IMPLEMENTED | Low | apps/marketing/app/layout.tsx; docs/design/FRONTEND_SOURCES.md | Marketing now uses a local Manrope WOFF2 with retained OFL; earlier API-only evidence remains in audit history. Browser/network behavior is not verified. | User local review and later network verification; no font CDN requests intended. | S |
 | 016. Disable session replay by default and mask sensitive inputs. | [ ] PARTIALLY IMPLEMENTED | Medium | apps/web/next.config.ts:4 | Sensitive route logs are reduced and no replay SDK is configured, but edge and monitoring masking are unverified. | Verify deployed tracking, payload masking and log capture. | M |
 | 017. Inventory external domains, scripts, embeds, SDKs and data transfers; gate embeds and chat tools appropriately. | [ ] PARTIALLY IMPLEMENTED | High | docs/DATA_LIFECYCLE.md | Source adapters and data transfer purposes are inventoried; no analytics or embeds are configured. Actual vendor regions/contracts and deployed transfers remain unverified. | Complete deployed transfer inventory and vendor agreements. | M |
 
@@ -162,7 +162,7 @@ Frontend work and external approvals are identified separately there.
 
 | Control | Status | Severity | Evidence | Assessment and impact | Next action | Complexity |
 |---|---|---|---|---|---|---|
-| 071. Clearly display pricing, taxes and billing periods. | [ ] NEEDS MANUAL VERIFICATION | High | README.md:209 | The ₹1,499 plan is a documented proposal; checkout tax and pricing disclosures lack UI/legal approval. | Approve the final plan, tax treatment and visible billing period. | M |
+| 071. Clearly display pricing, taxes and billing periods. | [ ] NEEDS MANUAL VERIFICATION | High | README.md:209 | The user-agreed ₹1,499/workspace/month marketing UI and usage limits are implemented locally; tax treatment and live checkout/provider plan matching remain unverified. | Finalize tax disclosures and verify the actual provider plan/checkout before public launch. | M |
 | 072. Disclose automatic renewal and provide easy online cancellation. | [ ] PARTIALLY IMPLEMENTED | High | packages/domain/billing/service.ts:26 | At-term cancellation API exists; renewal disclosure and easy online UI are pending. | Build the disclosure/cancel UI and prove merchant cancellation. | M |
 | 073. Use trusted payment providers; avoid storing card details. | [x] PASS | High | packages/integrations/razorpay.ts:24 | Only hosted subscription checkout is returned; local card storage is absent. | Verify the live hosted flow and vendor account ownership. | S |
 | 074. Verify payment webhook signatures. | [x] PASS | High | apps/web/app/api/v1/webhooks/billing/route.ts:15 | Raw-body billing signatures and duplicate IDs are tested with synthetic signed events. | Verify live endpoint secrets and rotation in staging. | S |
@@ -207,7 +207,7 @@ Frontend work and external approvals are identified separately there.
 | 098. Prevent N+1 database queries. | [x] PASS | Medium | docs/audit/verification-batch5-2026-11-18.json | Scheduler pages cycles and inserts notifications in batches. The repeated PostgreSQL 18 fake-provider sweep schedules 10,000 items locally without per-cycle membership queries. | Retest query plans and representative bursts after scheduling changes. | M |
 | 099. Paginate large datasets. | [x] PASS | Medium | docs/audit/verification-batch4-2026-11-18.json | Account/export pages, timezone preview, billing sweeps and worker cleanup are bounded. Imports export one batch per page; workspace export has a 4 MiB response guard. Local pilot dispatch passes. | Verify memory and HTTP performance at deployed load; preserve page limits on new datasets. | M |
 | 100. Cache frequently requested data securely. | [ ] PARTIALLY IMPLEMENTED | High | apps/web/next.config.ts:4 | Tenant responses bypass shared cache in source, while deployed CDN rules are unknown. | Keep public static caching separate and verify edge bypass. | M |
-| 101. Optimize images and static assets. | [ ] NOT APPLICABLE | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | There are no product image assets in the API-only build. | Measure and optimize assets when the UI is built. | S |
+| 101. Optimize images and static assets. | [ ] PARTIALLY IMPLEMENTED | Low | apps/marketing/components/marketing/hero-background.tsx | Marketing has a local font/static texture and lazy desktop cubes; static mobile fallback is implemented. Performance has not been measured. | Inspect browser/device behavior and loading before screen signoff. | S |
 | 102. Reduce unnecessary frontend JavaScript. | [ ] NEEDS MANUAL VERIFICATION | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | Frontend bundles do not yet exist. | Apply bundle budgets during frontend implementation. | M |
 | 103. Implement lazy loading and code splitting. | [ ] NEEDS MANUAL VERIFICATION | Low | docs/audit/verification-2026-11-18.json (E00 inventory) | Lazy loading and code splitting are future frontend work. | Measure routes and split expensive client code where needed. | M |
 | 104. Optimize Core Web Vitals. | [ ] NEEDS MANUAL VERIFICATION | Medium | docs/audit/verification-2026-11-18.json (E00 inventory) | No deployed frontend exists for Core Web Vitals measurement. | Measure actual user pages on staging. | M |
@@ -335,3 +335,14 @@ Revisit affected controls after material code changes and the full register at
 release milestones. Keep old audit evidence and close findings with a linked fix
 and regression proof. A green pre-existing suite does not close a failing audit
 counterexample. See AUDIT_REPORT.md for fix batches and current limitations.
+
+
+## Authentication UI preview update — 18 November 2026
+
+Shared auth views and development-only marketing preview routes now exist; see
+design/AUTHENTICATION_UI_PLAN.md and AUDIT_REPORT.md focused source review.
+Controls 018–026, 102–104, 113, 115, 118–119 and 138–139 retain their existing
+statuses; this UI-only source change supplies no new runtime PASS evidence.
+Real session/token/MFA/workspace/invitation wiring remains pending. Browser,
+responsive, accessibility, provider and integrated verification are still release
+gates. No tests, backend mutation, external message, push or deployment performed.

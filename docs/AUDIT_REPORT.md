@@ -580,3 +580,109 @@ this product's audit, a focused change, future frontend work, products without
 runtime AI, secret handling and failing counterexamples despite a passing
 baseline. No independent-agent behavioral evaluation was performed. Review
 instructions assist future work, but do not constitute an automated release gate.
+
+## 18 November 2026 — navbar/hero local implementation update
+
+Focused source record only, not a release signoff. A separate apps/marketing
+frontend implements the public navbar and opening hero without backend imports
+or changes to apps/web security/startup. Controls 015 and 101 now reflect local
+font/static-asset implementation with manual verification outstanding. Source
+provenance and adaptations are in docs/design/FRONTEND_SOURCES.md.
+
+At the user's explicit request, no tests, typecheck/build, HTTP checks or browser
+review were run. Development-server startup only is observed; actual rendering,
+responsive interactions, graphics cost and network/font behavior remain unverified.
+Signup/login, pricing and later sections are not implemented and relevant preview
+controls are inactive. Backend findings, vendor acceptance and deployment gates
+remain unresolved as previously recorded. No push, deployment, vendor action or
+external message occurred in this change.
+
+## 18 November 2026 — sections 2–3 source update
+
+Product-preview and workflow illustrations were added to the isolated marketing
+app. The data is a bundled synthetic fixture. The only working new controls are
+local tab selection and in-page anchors; no private API, auth/session, mail,
+provider, billing or tenant data paths are connected or modified. Trial/login/
+pricing remain inactive previews. Source inventory: docs/design/FRONTEND_SOURCES.md.
+
+User-requested testing boundary remains in force: no tests, type/build checks,
+browser/device checks or HTTP probes were run. Mobile/reduced-motion and keyboard
+support are implemented but not verified. Existing provider/deployment findings
+are preserved; no production or release signoff is implied. No push occurred.
+
+## 18 November 2026 — sections 4–5 source update
+
+Focused source record: public marketing comparison and agency-control illustrations
+added. Input changes only the comparison reveal, not service/decision/invoice data.
+Sample data is local. Components have no auth, workspace API, billing, mail or
+provider imports, and no outbound data requests are introduced. Backend findings
+and deployment/provider acceptance gates remain as previously recorded.
+
+The user reserves testing to themselves. No tests/type/build/browser checks or
+HTTP probes were run, and no production-readiness claim is made. Responsive,
+keyboard/range and reduced-motion behavior are implemented but not verified.
+No push, deployment or real provider actions occurred.
+
+## 18 November 2026 — public pricing source update
+
+Marketing pricing now displays the user-agreed ₹1,499 per workspace/month,
+14-day 10-item/3-seat trial and 100-item/5-seat Team allowance. It explains
+read/export access after trial expiry and at-term cancellation. Control 071
+still needs manual verification because tax treatment, complete public checkout
+terms and the real Razorpay plan have not been verified. Marketing CTA remains
+inactive; no real checkout or billing-provider calls are introduced.
+
+Navbar/hero Pricing anchors and sticky navigation styling changed locally.
+No tests, type/build/HTTP/browser checks were run under the user's instruction.
+No provider actions, charges, deployment, commit or push occurred; existing
+backend/security/provider findings and audit history remain intact.
+
+## 18 November 2026 — closing CTA/footer source update
+
+Added public closing content and working footer anchors/agency link. No forms,
+tracking, private data, APIs or providers are connected. Trial remains an inactive
+preview; legal/contact/social destinations still require approved content before
+public release. This does not establish a production-complete marketing site.
+No tests/type/build/browser checks or HTTP probes were run under the user's
+standing instruction. No push, deployment, provider action or release signoff.
+
+
+## 18 November 2026 — authentication UI focused source completion review
+
+Scope: UI-only local previews and shared presentation; no backend changes or
+release signoff. Used renewrelay-ui and saas-production-audit guidance. Reviewed
+controls 018–026 (auth contract boundary), 102–104 (frontend performance pending),
+113/115 (error/expired-state presentation), 118/119 (accessibility/storage) and
+138/139 (future integrated verification). Existing statuses and findings are
+preserved; no screen-level or production control is promoted to PASS.
+
+Evidence: packages/ui/auth/{contracts.ts,auth-shell.tsx,auth-fields.tsx,
+auth-forms.tsx,auth.css}; apps/marketing/components/auth/auth-preview.tsx;
+apps/marketing/app/(auth-preview)/layout.tsx. Existing apps/web auth catch-all,
+runtime, domain/workspaces/context and installed Better Auth defaults were read.
+Presentation takes typed injected actions; synthetic host does not call APIs,
+read tokens/cookies or persist credentials. Nondevelopment routes return notFound;
+production marketing actions remain inactive. Sample QR/codes cannot authenticate
+against a RenewRelay account. Future integration must replace the entire preview
+host with an app-origin adapter and revalidate cookies, callbacks, session/MFA,
+verification/reset token handling, rate limits, logs and access resolution.
+
+No tests/type/lint/build checks, browser/HTTP probes, real auth request, provider
+operation, message, database write, commit, push or deployment. Source inspection
+is not runtime evidence. Current source is the uncommitted local working tree;
+prior API/live-provider/legal findings and production gates remain unresolved as
+previously recorded. UI behavior and responsive/accessibility outcomes NEED MANUAL
+VERIFICATION by local review, followed by authorized integrated checks later.
+
+
+## Authentication refinement — focused source follow-up
+
+Presentation-only pass across existing auth routes, with backend contracts and
+production guard retained. Source-reviewed expired/error and recovery UI, neutral
+email confirmation, temporary in-memory recipient data, labeled password controls,
+MFA method switching and copy/download feedback. No added API calls, cookies,
+persistent credentials, tracking, provider side effects or backend modifications.
+Existing controls 018–026, 113, 115, 118–119 and 138–139 retain their statuses;
+no runtime or production PASS is added. See UI_REVIEW_LOG.md for the scope and
+NOT REVIEWED visual/interaction evidence boundary. No tests/build/type/browser
+checks, real auth request, external message, commit, push or deployment.

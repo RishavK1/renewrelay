@@ -33,3 +33,8 @@ work. Use `docs/DESIGN_SYSTEM.md` as the shared visual contract and record real
 screen evidence in `docs/UI_REVIEW_LOG.md`. Apply the user's current choices over
 upstream aesthetic defaults; do not independently redesign each screen. These
 skills guide the work and do not run as background processes or certify quality.
+
+# GitHub pushes
+
+Do not push to GitHub without the user's explicit permission for that push.
+Previous pushes or earlier broad authorization are not standing permission.
