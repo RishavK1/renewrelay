@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: local_migrator
       POSTGRES_DB: renewrelay
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${RENEWRELAY_POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
       - ./infra/local/create-roles.sh:/docker-entrypoint-initdb.d/create-roles.sh:ro

@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks";
-import { writeFile } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { hashPassword, verifyPassword } from "../packages/domain/passwords.ts";
 const milliseconds = [];
 for (let attempt = 0; attempt < 5; attempt++) {
@@ -12,5 +13,7 @@ const result = { checkedAt: new Date().toISOString(), node: process.version, pla
   algorithm: "scrypt", format: "rr-scrypt-v1", cost: { N: 32768, r: 8, p: 3, bytes: 64, maxMemoryBytes: 67108864 },
   sampleCount: milliseconds.length, operation: "hash plus successful verification", samplesMs: milliseconds.map(value => Math.round(value)),
   legacyVerificationSupported: true, legacyMigration: "Compare-and-set rehash after successful password sign-in", scope: "Local compatibility/cost evidence, not a production concurrency benchmark" };
-await writeFile(process.env.PASSWORD_BENCHMARK_OUTPUT ?? "docs/audit/password-cost-batch4-2026-11-18.json", JSON.stringify(result, null, 2) + "\n");
+const outputPath = process.env.PASSWORD_BENCHMARK_OUTPUT ?? "output/audit/password-cost.json";
+await mkdir(dirname(outputPath), { recursive: true });
+await writeFile(outputPath, JSON.stringify(result, null, 2) + "\n");
 console.log(JSON.stringify(result));

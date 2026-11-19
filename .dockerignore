@@ -9,3 +9,12 @@ dist
 coverage
 **/*.tsbuildinfo
 packages/db/generated
+
+# Internal documentation and local review artifacts are not build inputs.
+docs
+.agents
+.claude
+AGENTS.md
+RenewRelay-Backend-Plan.md
+.playwright-cli
+output

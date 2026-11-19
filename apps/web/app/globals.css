@@ -1,0 +1,12 @@
+:root { color-scheme: light; --color-snow: #fcfbf8; --color-ink: #071a31; --color-sky: #c3dffe; --color-control-border: #81909f; --color-placeholder: #627284; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--color-snow); color: var(--color-ink); font-family: var(--font-manrope), Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+button:not(:disabled), a { touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 3px; border-radius: 4px; }
+::selection { background: var(--color-sky); color: var(--color-ink); }
+.skip-link { position: fixed; top: 12px; left: 16px; z-index: 100; padding: 12px 20px; background: var(--color-ink); color: var(--color-snow); border-radius: 999px; transform: translateY(-160%); }
+.skip-link:focus { transform: translateY(0); }
+.rr-auth__enrollment-fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }

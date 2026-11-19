@@ -1,0 +1,59 @@
+"use client";
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { DashboardShell } from "../../../../packages/ui/dashboard/dashboard-shell";
+import { AuthNotice } from "../../../../packages/ui/auth/auth-fields";
+import { SettingsOverview } from "../../../../packages/ui/settings/settings-overview";
+import { TimezoneForm } from "../../../../packages/ui/settings/timezone-form";
+import { Subscription, BillingForm } from "../../../../packages/ui/settings/billing-screens";
+import { ExportScreen } from "../../../../packages/ui/settings/export-screen";
+import { DeleteWorkspace, DeletionStatus } from "../../../../packages/ui/settings/deletion-screens";
+import type { BillingRead, ExportAction, LifecycleRead, SettingsAccess, SettingsAction, SettingsResult } from "../../../../packages/ui/settings/contracts";
+import { useSettingsPreview } from "./settings-preview-store";
+import { useTeamPreview } from "../team/team-preview-store";
+import { useClientPreview } from "../clients/client-preview-store";
+export type SettingsView = "overview" | "timezone" | "subscription" | "checkout" | "cancel" | "exports" | "delete" | "deletion";
+type Scenario = "normal" | "loading" | "load-error" | "as-admin" | "as-member" | "session" | "email" | "mfa" | "recent-login" | "network" | "lost-receipt" | "rate" | "stale-preview" | "processing" | "provider-disabled" | "provider-unconfigured" | "lifecycle-error" | "recovery-expired" | "different-owner" | "export-page-limit" | "checkout-closed" | "refresh-error" | "checkout-ready-on-refresh";
+const scenarios: Scenario[] = ["normal", "loading", "load-error", "as-admin", "as-member", "session", "email", "mfa", "recent-login", "network", "lost-receipt", "rate", "stale-preview", "processing", "provider-disabled", "provider-unconfigured", "lifecycle-error", "recovery-expired", "different-owner", "export-page-limit", "checkout-closed", "refresh-error", "checkout-ready-on-refresh"];
+function pause(signal: AbortSignal) { return new Promise<void>((resolve, reject) => { if (signal.aborted) { reject(new Error("Aborted")); return; } const cancel = () => { clearTimeout(timer); reject(new Error("Aborted")); }; const timer = setTimeout(() => { signal.removeEventListener("abort", cancel); resolve(); }, 350); signal.addEventListener("abort", cancel, { once: true }); }); }
+export function SettingsPreview({ view }: { view: SettingsView }) {
+  const store = useSettingsPreview(), team = useTeamPreview(), clients = useClientPreview();
+  const [scenario, setScenario] = useState<Scenario>("normal"), [generation, setGeneration] = useState(0), [policyLoaded, setPolicyLoaded] = useState(false);
+  const attempts = useRef(0), receipt = useRef<{ command: string; result: Extract<SettingsResult, { status: "success" }> } | null>(null);
+  const current = useRef(store); current.current = store;
+  const actor = team.members.find(row => row.userId === (scenario === "as-admin" ? "preview-admin" : scenario === "as-member" ? "preview-member" : "preview-owner"));
+  const access: SettingsAccess = { role: actor?.role ?? "member", recentAuth: scenario !== "recent-login", writable: store.billing.writable, deleting: store.billing.mode === "deleting" };
+  const workspace = { ...team.workspace, role: access.role };
+  const billing = scenario === "recovery-expired" ? { ...store.billing, purgeAfter: "2026-01-01T00:00:00Z" } : store.billing;
+  const lifecycle = !access.recentAuth || scenario === "lifecycle-error" && !policyLoaded ? null : store.lifecycle;
+  const action: SettingsAction = async (command, signal) => {
+    await pause(signal);
+    const serialized = JSON.stringify(command);
+    if (receipt.current?.command === serialized) return receipt.current.result;
+    if (scenario === "network" && attempts.current++ === 0) throw new Error("Synthetic unavailable response");
+    if (scenario === "rate") return { status: "error", code: "rate_limited", message: "Too many attempts. Wait before retrying this action.", retryAfterSeconds: 5 };
+    if (scenario === "stale-preview" && command.operation === "timezone.change") return { status: "error", code: "stale_preview", message: "The renewal data changed. Refresh the impact preview." };
+    if (scenario === "different-owner" && command.operation === "restore") return { status: "error", code: "forbidden", message: "Only the owner who requested deletion can restore this workspace." };
+    if (scenario === "recovery-expired" && command.operation === "restore") return { status: "error", code: "recovery_unavailable", message: "The recovery deadline has passed." };
+    if (["provider-disabled", "provider-unconfigured"].includes(scenario) && command.operation === "checkout") return { status: "error", code: scenario === "provider-disabled" ? "billing_disabled" : "billing_unconfigured", message: "Payment setup is unavailable. No subscription was created; try again when billing is available." };
+    if (scenario === "checkout-closed" && command.operation === "checkout") return { status: "success", operation: "checkout", state: "terminal", checkoutUrl: null };
+    const result = await current.current.execute(command, access, scenario === "processing" || scenario === "checkout-ready-on-refresh");
+    if (result.status === "success" && command.operation !== "timezone.preview") {
+      receipt.current = { command: serialized, result };
+      if (scenario === "lost-receipt" && attempts.current++ === 0) throw new Error("Synthetic lost committed receipt");
+    }
+    return result;
+  };
+  const refresh: BillingRead = async signal => { await pause(signal); if (scenario === "checkout-ready-on-refresh") { const result = await current.current.execute({ operation: "checkout", input: {} }, access); if (result.status === "success" && result.operation === "checkout") return { status: "success", billing: { ...current.current.billing, checkoutState: result.state, checkoutUrl: result.checkoutUrl, version: current.current.billing.version + 1 } }; } if (scenario === "refresh-error") return { status: "error", code: "temporarily_unavailable", message: "Subscription status could not refresh. Existing verified access is still shown; try again." }; return { status: "success", billing: current.current.billing }; };
+  const reloadLifecycle: LifecycleRead = async signal => { await pause(signal); if (!access.recentAuth) return { status: "error", code: "reauthentication_required", message: "Sign in again to read retention details." }; setPolicyLoaded(true); return { status: "success", lifecycle: current.current.lifecycle }; };
+  const exportAction: ExportAction = async (command, signal) => { await pause(signal); if (scenario === "export-page-limit") return { status: "error", code: "export_page_limit", message: "This dataset page is too large. Reduce the records per page and retry." }; if (scenario === "network") throw new Error("Synthetic unavailable export"); return current.current.exportRecords(command, access); };
+  const blocked = ["session", "email", "mfa"].includes(scenario), isOwnerView = !["overview", "exports"].includes(view);
+  const key = `${view}-${generation}`;
+  return <><DashboardShell workspace={blocked || ["loading", "load-error"].includes(scenario) ? null : workspace} activeSection="Settings" clientsHref="/clients" preview>
+    {scenario === "loading" ? <section className="rr-clients__loading" role="status">Loading workspace settings…</section> : scenario === "load-error" ? <section className="rr-clients__loading"><h1>Settings couldn’t load</h1><p>Your changes have not been submitted. Check the connection and retry.</p><button className="rr-dashboard__primary" onClick={() => setScenario("normal")}>Try again</button></section> : blocked ? <section className="rr-clients__loading"><h1>{scenario === "session" ? "Sign in to continue" : scenario === "email" ? "Verify your email" : "Verify your sign-in"}</h1><p>Restore account access before opening workspace settings.</p><Link className="rr-dashboard__primary" href={scenario === "session" ? "/login" : scenario === "email" ? "/check-email" : "/two-factor"}>Continue</Link></section> : access.role === "member" || isOwnerView && access.role !== "owner" ? <section className="rr-follow__status"><h1>Owner access required</h1><p>{access.role === "admin" ? "Admins can export renewal CSV records. The workspace owner manages these controls." : "Ask your workspace owner to review settings and subscription access."}</p>{access.role === "admin" && <Link className="rr-clients__outline-action" href="/settings/exports">View renewal exports</Link>}</section> : <>
+      {!access.recentAuth && <AuthNotice>Some actions require a recent sign-in. <Link className="rr-auth__notice-link" href="/login">Sign in again</Link></AuthNotice>}
+      {access.deleting && view !== "deletion" && view !== "delete" && <AuthNotice>Workspace deletion is requested. Operational changes and exports are stopped. <Link className="rr-auth__notice-link" href="/settings/deletion">View recovery options</Link></AuthNotice>}
+      {view === "overview" ? <SettingsOverview workspace={workspace} billing={access.role === "owner" ? billing : null} access={access} /> : view === "timezone" ? <TimezoneForm key={key} workspace={workspace} access={access} action={action} preview /> : view === "subscription" ? <Subscription key={key} billing={billing} refresh={refresh} /> : view === "checkout" || view === "cancel" ? <BillingForm key={key} mode={view} billing={billing} access={access} action={action} refresh={refresh} preview /> : view === "exports" ? <ExportScreen key={key} access={access} action={exportAction} preview /> : view === "delete" ? <DeleteWorkspace key={key} workspace={workspace} billing={billing} access={access} action={action} lifecycle={lifecycle} lifecycleFailure={scenario === "lifecycle-error" ? "Retention details couldn’t load. Try again before requesting deletion." : null} reloadLifecycle={reloadLifecycle} preview /> : <DeletionStatus key={key} billing={billing} lifecycle={lifecycle} access={access} action={action} preview />}
+    </>}
+  </DashboardShell><details className="rr-auth__review rr-settings__tools"><summary>Local preview tools</summary><p>Temporary in-memory fixtures only. No backend, provider, payment, download, email or real deletion runs. Refreshing resets the samples. These controls are for development review.</p><div className="rr-auth__review-controls"><label htmlFor="settings-scenario">Screen state<select id="settings-scenario" value={scenario} onChange={event => { setScenario(event.target.value as Scenario); attempts.current = 0; receipt.current = null; setPolicyLoaded(false); setGeneration(value => value + 1); }}>{scenarios.map(value => <option key={value}>{value}</option>)}</select></label><label htmlFor="settings-access">Sample access<select id="settings-access" value={store.billing.mode} onChange={event => { store.setMode(event.target.value as typeof store.billing.mode); receipt.current = null; attempts.current = 0; setGeneration(value => value + 1); }}>{["paid", "trial", "grace", "read_only", "deleting"].map(value => <option key={value}>{value}</option>)}</select></label><button className="rr-clients__outline-action" onClick={() => { store.reset(); team.reset(); setScenario("normal"); receipt.current = null; attempts.current = 0; setGeneration(value => value + 1); }}>Reset settings samples</button><button className="rr-clients__outline-action" disabled={access.deleting} onClick={() => clients.loadOrganizationSamples()}>Load organization samples</button></div><nav aria-label="Settings preview navigation">{(["overview", "timezone", "subscription", "checkout", "cancel", "exports", "delete", "deletion"] as const).map(value => <Link key={value} href={value === "overview" ? "/settings" : ["checkout", "cancel"].includes(value) ? `/settings/subscription/${value}` : `/settings/${value}`}>{value}</Link>)}</nav></details></>;
+}

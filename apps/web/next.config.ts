@@ -5,6 +5,7 @@ const config: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
+  devIndicators: false,
   logging: { incomingRequests: { ignore: [/\/api\/auth\//, /\/d(?:\/|$)/] } },
   serverExternalPackages: ["nodemailer", "pg", "@prisma/client", "@prisma/adapter-pg"],
   async headers() {
@@ -15,6 +16,7 @@ const config: NextConfig = {
         { key: "Referrer-Policy", value: "no-referrer" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "X-Frame-Options", value: "DENY" },
+        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         { key: "Content-Security-Policy", value: "default-src 'none'; frame-ancestors 'none'" },
       ],
     }];

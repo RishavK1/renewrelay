@@ -2,13 +2,13 @@ import { ArrowUp, ArrowUpRight } from "lucide-react";
 
 const footerGroups = [
   { title: "Product", links: [
-    { label: "Overview", href: "#product" },
-    { label: "How it works", href: "#how-it-works" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Overview", href: "/#product" },
+    { label: "How it works", href: "/#how-it-works" },
+    { label: "Pricing", href: "/#pricing" },
   ] },
   { title: "Explore", links: [
-    { label: "Agency control", href: "#agency-control" },
-    { label: "Questions & answers", href: "#faq" },
+    { label: "Agency control", href: "/#agency-control" },
+    { label: "Questions & answers", href: "/#faq" },
   ] },
 ] as const;
 
@@ -18,7 +18,7 @@ export function SiteFooter() {
       <div className="page-container footer-content">
         <div className="footer-top">
           <div className="footer-brand">
-            <a className="footer-wordmark" href="#hero">RenewRelay</a>
+            <a className="footer-wordmark" href="/#hero">RenewRelay</a>
             <p>A clearer process for your agency’s client renewals.</p>
           </div>
           {footerGroups.map(group => (
@@ -29,10 +29,10 @@ export function SiteFooter() {
           ))}
           <nav className="footer-group" aria-label="Footer company">
             <h2>Company</h2>
-            <ul><li><a href="https://getvout.com" target="_blank" rel="noopener noreferrer">GetVout <ArrowUpRight size={15} aria-hidden="true" /></a></li><li><a href="#hero">Back to top <ArrowUp size={15} aria-hidden="true" /></a></li></ul>
+            <ul><li><a href="https://getvout.com" target="_blank" rel="noopener noreferrer">GetVout <ArrowUpRight size={15} aria-hidden="true" /></a></li><li><a href="/#hero">Back to top <ArrowUp size={15} aria-hidden="true" /></a></li></ul>
           </nav>
         </div>
-        <div className="footer-meta"><p>© {new Date().getUTCFullYear()} RenewRelay.</p><p>A product by <a href="https://getvout.com" target="_blank" rel="noopener noreferrer">GetVout</a></p></div>
+        <div className="footer-meta"><nav aria-label="Legal documents"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><p>© {new Date().getUTCFullYear()} RenewRelay.</p><p>A product by <a href="https://getvout.com" target="_blank" rel="noopener noreferrer">GetVout</a></p></div>
       </div>
       <div className="footer-signature" aria-hidden="true">
         <svg viewBox="0 0 1200 214" fill="currentColor" focusable="false">

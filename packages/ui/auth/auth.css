@@ -14,16 +14,17 @@
 .rr-auth__label-row { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 9px; font-size: 14px; line-height: 1.5; }
 .rr-auth__label-row label { font-weight: 650; }
 .rr-auth__label-row a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 550; padding-block: 4px; margin-block: -10px; }
-.rr-auth input:not([type=checkbox]) { display: block; appearance: none; width: 100%; min-width: 0; min-height: 50px; padding: 12px 15px; border: 1px solid #d8dfe5; border-radius: 12px; background: white; color: #071a31; font: inherit; font-size: 16px; line-height: 1.5; box-shadow: 0 1px 2px #071a3103; transition: border-color 150ms, box-shadow 150ms; }
-.rr-auth input::placeholder { color: #718091; opacity: 1; }
+.rr-auth input:not([type=checkbox]) { display: block; appearance: none; width: 100%; min-width: 0; min-height: 50px; padding: 12px 15px; border: 1px solid var(--color-control-border, #81909f); border-radius: 12px; background: white; color: #071a31; font: inherit; font-size: 16px; line-height: 1.5; box-shadow: 0 1px 2px #071a3103; transition: border-color 150ms, box-shadow 150ms; }
+.rr-auth input::placeholder { color: var(--color-placeholder, #627284); opacity: 1; }
 .rr-auth input:not([type=checkbox]):focus { border-color: #071a31; outline: none; box-shadow: inset 0 0 0 1px #071a31; }
 .rr-auth input[aria-invalid=true] { border-color: var(--auth-error); }
 .rr-auth__password { position: relative; }
 .rr-auth__password input { padding-right: 56px !important; }
 .rr-auth__password button { position: absolute; right: 4px; top: 3px; width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; color: #526171; border-radius: 8px; }
 .rr-auth__password button:hover { color: #071a31; }
-.rr-auth__password[data-show-label=true] input { padding-right: 92px !important; }
-.rr-auth__password[data-show-label=true] button { width: 78px; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 600; }
+.rr-auth__password[data-show-label=true] input { padding-right: calc(3.5em + 54px) !important; }
+.rr-auth__password[data-show-label=true] button { width: calc(3.5em + 36px); display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 600; }
+.rr-auth__password button svg { flex-shrink: 0; }
 .rr-auth__password button:hover { background: #edf4fb; }
 .rr-auth__hint, .rr-auth__field-error { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #526171; overflow-wrap: anywhere; }
 .rr-auth__field-error { color: var(--auth-error); }
@@ -117,3 +118,6 @@
 @media (max-width: 1023px) { .rr-auth { grid-template-columns: minmax(0, 1fr); padding: 0; } .rr-auth__aside { display: none; } .rr-auth__column { padding: 24px; min-height: 100svh; } .rr-auth__content { max-width: 440px; } .rr-auth__header { width: 100%; max-width: 680px; align-self: center; } .rr-auth__main { padding-block: 56px; } .rr-auth__heading h1 { font-size: 32px; } }
 @media (max-width: 479px) { .rr-auth__column { padding: 22px 20px 12px; } .rr-auth__brand { font-size: 23px; } .rr-auth__heading { margin-bottom: 26px; } .rr-auth__heading h1 { font-size: 30px; } .rr-auth__main { padding-block: 36px; } .rr-auth__form { gap: 22px; } .rr-auth__codes { padding: 16px; gap: 16px 12px; } .rr-auth__codes code { font-size: 12px; } .rr-auth__code-actions { gap: 8px; } .rr-auth__code { letter-spacing: .3em; } }
 @media (prefers-reduced-motion: reduce) { .rr-auth *, .rr-auth *::before { animation: none !important; transition: none !important; } }
+
+/* Follow-up instructions stay separate from the notice's opening message. */
+.rr-auth__notice > p { margin:12px 0 0; }

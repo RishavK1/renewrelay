@@ -1,9 +1,10 @@
 "use client";
 
 // Adapted from Aceternity Animated Tabs (official registry, 18 November 2026).
-// Source and deliberate changes: docs/design/FRONTEND_SOURCES.md.
+// Reference: https://ui.aceternity.com/components/tabs
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { useSafeReducedMotion } from "./use-motion-preference";
+import { LayoutGroup, motion } from "motion/react";
 
 export type Tab = {
   title: string;
@@ -17,7 +18,7 @@ export function Tabs({ tabs, label }: { tabs: readonly Tab[]; label: string }) {
   const [active, setActive] = useState(tabs[0]?.value);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useSafeReducedMotion();
 
   function moveFocus(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const last = tabs.length - 1;

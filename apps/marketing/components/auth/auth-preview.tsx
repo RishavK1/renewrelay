@@ -69,10 +69,10 @@ export function AuthPreview({ screen }: { screen: AuthScreen }) {
           <AuthSuccessMark /><AuthHeading title="Email verified">Your email is verified. You can now log in.</AuthHeading><AuthNotice>Preview of the verification result. No email address was verified.</AuthNotice><a className="rr-auth__submit" href="/login">Continue to log in</a>
         </>)}
         {screen === "auth-complete" && <>
-          <AuthSuccessMark /><AuthHeading title="Ready for your workspace">This is where workspace selection or onboarding will begin.</AuthHeading>
+          <AuthSuccessMark /><AuthHeading title="Ready for your workspace">Choose an existing workspace or create a shared home for your agency’s renewals.</AuthHeading>
           <AuthNotice>UI preview only. You are not signed in, and no workspace or trial has been created.</AuthNotice>
           <p className="rr-auth__hint rr-auth__after-form">Creating a workspace requires authenticator verification. Owner and admin access also requires it.</p>
-          <a className="rr-auth__submit rr-auth__after-form" href="/setup-authenticator">Preview authenticator setup</a><AuthBack href="/">Return to homepage</AuthBack>
+          <a className="rr-auth__submit rr-auth__after-form" href="/workspaces">Choose workspace</a><a className="rr-auth__text-button" href="/workspace-setup">Create a workspace</a><a className="rr-auth__text-button" href="/setup-authenticator">Preview authenticator setup</a><AuthBack href="/">Return to homepage</AuthBack>
         </>}
       </div>
     </AuthShell>

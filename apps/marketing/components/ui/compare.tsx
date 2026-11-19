@@ -1,7 +1,7 @@
 "use client";
 
 // Adapted from Aceternity Compare's two-layer reveal and divider.
-// Source/adaptations: docs/design/FRONTEND_SOURCES.md.
+// Reference: https://ui.aceternity.com/components/compare
 import { useId, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ChevronsLeftRight } from "lucide-react";

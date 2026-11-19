@@ -185,7 +185,9 @@ test("Foundation over HTTP with real PostgreSQL and local SMTP", { timeout: 180_
     const { text } = await captureMail(email, /verify-email/);
     const link = text.match(/https?:\/\/[^\s]+/)?.[0];
     assert.ok(link);
-    const verification = await fetch(link, { headers, redirect: "manual" });
+    const token = new URLSearchParams(new URL(link).hash.slice(1)).get("token");
+    assert.ok(token);
+    const verification = await api(`/api/auth/verify-email?${new URLSearchParams({ token })}`, { headers, redirect: "manual" });
     assert.ok([200, 302, 303].includes(verification.status), `verification returned ${verification.status}`);
     const login = await api("/api/auth/sign-in/email", { method: "POST", headers, body: { email, password } });
     const data = await expect(login, 200);

@@ -1,9 +1,10 @@
 "use client";
 
 // Adapted from Aceternity Timeline (official registry, 18 November 2026).
-// Source and deliberate changes: docs/design/FRONTEND_SOURCES.md.
+// Reference: https://ui.aceternity.com/components/timeline
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { useSafeReducedMotion } from "./use-motion-preference";
+import { motion, useScroll, useTransform } from "motion/react";
 
 type TimelineEntry = {
   id: string;
@@ -16,7 +17,7 @@ type TimelineEntry = {
 export function Timeline({ data }: { data: readonly TimelineEntry[] }) {
   const container = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useSafeReducedMotion();
   const { scrollYProgress } = useScroll({ target: container, offset: ["start 70%", "end 60%"] });
   const progressHeight = useTransform(scrollYProgress, [0, 1], [0, height]);
 

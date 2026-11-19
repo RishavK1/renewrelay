@@ -1,5 +1,5 @@
 // Source: Aceternity Background Cubes Grid, supplied 18 November 2026.
-// Adaptations and provenance: docs/design/FRONTEND_SOURCES.md.
+// Reference: https://ui.aceternity.com/components/background-cubes-grid
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -234,7 +234,7 @@ function createIsometricScene(
       for (let j = Math.max(1, cj - reach); j <= Math.min(size - 2, cj + reach); j++) {
         const dx = i - gx;
         const dz = j - gz;
-        velocity[i * size + j] -= strength * Math.exp(-(dx * dx + dz * dz) * inv);
+        velocity[i * size + j] = velocity[i * size + j]! - strength * Math.exp(-(dx * dx + dz * dz) * inv);
       }
     }
     awake = true;
@@ -321,7 +321,7 @@ function createIsometricScene(
             Math.abs(height[k - size]!) +
             Math.abs(height[k + size]!)) /
           8;
-        glowField[k] += (energy - glowField[k]!) * (energy > glowField[k]! ? 0.08 : 0.015);
+        glowField[k] = glowField[k]! + (energy - glowField[k]!) * (energy > glowField[k]! ? 0.08 : 0.015);
       }
     }
   };
@@ -792,7 +792,7 @@ function createPerspectiveScene(
     const hits = raycaster.intersectObject(rayPlane);
     if (hits.length === 0) return;
 
-    const { x, z } = hits[0].point;
+    const { x, z } = hits[0]!.point;
     let distDelta = 0;
     if (lastPoint) {
       distDelta = Math.hypot(x - lastPoint.x, z - lastPoint.z);

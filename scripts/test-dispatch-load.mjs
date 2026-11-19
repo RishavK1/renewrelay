@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { writeFile } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { openDatabase } from "../packages/db/database.ts";
 import { createWorkspace } from "../packages/domain/workspaces.ts";
@@ -137,7 +138,9 @@ try {
     limitations: ["In-process provider fixture, no live delivery or quota acceptance", "Queue timings measure authorized domain queries, excluding HTTP/network overhead",
       "Local single-worker capacity only; cloud staging and aggregate provider-account quota remain release gates",
       "Five-minute calculation includes one scheduler sweep and a conservative 30-second idle poll allowance"] };
-  await writeFile(process.env.DISPATCH_LOAD_OUTPUT ?? "docs/audit/dispatch-load-2026-11-18.json", JSON.stringify(output, null, 2) + "\n");
+  const outputPath = process.env.DISPATCH_LOAD_OUTPUT ?? "output/audit/dispatch-load.json";
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, JSON.stringify(output, null, 2) + "\n");
   console.log(JSON.stringify(output));
   assert.ok(output.withinFiveMinutes && output.queueDomainUnder500Ms);
 } finally {

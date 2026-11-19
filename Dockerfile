@@ -8,7 +8,7 @@ RUN npm ci
 COPY . .
 RUN npm run db:generate && npm run build:release
 RUN mkdir -p /app/release/certs && node -e "fetch('https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem').then(r=>{if(!r.ok)throw Error('CA download failed');return r.text()}).then(t=>require('node:fs').writeFileSync('/app/release/certs/rds-global-bundle.pem',t))"
-RUN cp /app/docs/THIRD_PARTY_NOTICES.txt /app/release/THIRD_PARTY_NOTICES.txt
+RUN cp /app/THIRD_PARTY_NOTICES.txt /app/release/THIRD_PARTY_NOTICES.txt
 
 FROM node:22.23.5-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS migration
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client openssl && rm -rf /var/lib/apt/lists/*

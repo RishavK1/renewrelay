@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import test,{after} from 'node:test';
+import {build} from 'esbuild';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {mkdir,mkdtemp,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+await mkdir(join(process.cwd(),'.next'),{recursive:true});
+const dir=await mkdtemp(join(process.cwd(),'.next','motion-ui-'));after(()=>rm(dir,{recursive:true,force:true}));const file=join(dir,'ui.mjs');
+await build({stdin:{contents:'export {Tabs} from "./apps/marketing/components/ui/tabs";export {Timeline} from "./apps/marketing/components/ui/timeline";',resolveDir:process.cwd()},outfile:file,bundle:true,packages:'external',platform:'node',format:'esm',jsx:'automatic',logLevel:'silent'});
+const {Tabs,Timeline}=await import(pathToFileURL(file).href);
+test('tabs server snapshot avoids motion-dependent transforms and keeps inactive panels inert',()=>{const html=renderToStaticMarkup(createElement(Tabs,{label:'Examples',tabs:[{title:'First',value:'first',content:'First content',caption:'First caption'},{title:'Second',value:'second',content:'Second content',caption:'Second caption'}]}));assert.ok(!html.includes('translateY(4px)'));assert.ok(html.includes('aria-hidden="true"'));assert.ok(html.includes('inert=""'));assert.ok(html.includes('role="tablist"'));});
+test('timeline server snapshot is static until client motion preference is resolved',()=>{const html=renderToStaticMarkup(createElement(Timeline,{data:[{id:'one',label:'Prepare',title:'Prepare renewal',description:'Review the terms',content:'Sample'}]}));assert.ok(html.includes('workflow-rail'));assert.ok(!html.includes('workflow-rail__progress'));assert.ok(html.includes('Prepare renewal'));});

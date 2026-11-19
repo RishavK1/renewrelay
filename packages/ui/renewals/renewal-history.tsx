@@ -1,0 +1,23 @@
+"use client";
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { displayMoney } from "./money";
+import type { RenewalHistoryRow } from "./organization-contracts";
+const labels: Record<string, string> = { "cycle.created": "Renewal cycle created", "cycle.created_overdue": "Cycle created overdue", "cycle.revised": "Renewal details revised", "cycle.activated": "Draft activated", "cycle.activated_overdue": "Draft activated overdue", "cycle.offline_instruction": "Offline client instruction recorded", "cycle.approval_waived": "Approval waived", "cycle.blocked": "Provider blocker recorded", "cycle.unblocked": "Provider blocker cleared", "cycle.renewed": "Provider renewal recorded", "cycle.cancelled": "Provider cancellation recorded", "cycle.withdrawn": "Cycle withdrawn", "cycle.corrected": "Correction appended", "cycle.successor_corrected": "Next-cycle dates corrected", "cycle.successor_created": "Next cycle created", "cycle.billing_changed": "Agency invoice tracking changed", "decision.issued": "Client decision request issued", "decision.responded": "Client response recorded", "decision.question": "Client question recorded", "decision.question_resolved": "Question resolution recorded", "decision.recipient_revoked": "Decision recipient access revoked" };
+const fields: Record<string, string> = { state: "Initial state", reason: "Reason", correction: "Correction", note: "Note", term: "Client term", revision: "Request revision", providerAgreement: "Provider agreement", source: "Instruction source", instructedOn: "Instruction date", performedOn: "Provider action date", action: "Instruction", choice: "Client response", fromState: "Previous state", from: "Previous value", to: "Recorded value", billingStatus: "Invoice status", expiryOn: "Expiry date", noticeBy: "Provider notice", respondBy: "Client response date", previousExpiryOn: "Previous expiry", previousNoticeBy: "Previous provider notice", previousRespondBy: "Previous client response date" };
+function safeDetails(details: unknown) {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return [];
+  const object = details as Record<string, unknown>;
+  const values: [string, string][] = [];
+  for (const [key, label] of Object.entries(fields)) { const value = object[key]; if (typeof value === "string" || typeof value === "number") values.push([label, String(value)]); else if (value === null && key in object) values.push([label, "Not recorded"]); }
+  if (object.dates && typeof object.dates === "object" && !Array.isArray(object.dates)) for (const [key, label] of Object.entries({ expiryOn: "Updated expiry", noticeBy: "Updated notice", respondBy: "Updated response date" })) { const value = (object.dates as Record<string, unknown>)[key]; if (typeof value === "string" || value === null) values.push([label, value ?? "Not recorded"]); }
+  if ("quoteMinor" in object && (typeof object.quoteMinor === "number" || object.quoteMinor === null) && typeof object.currency === "string") {
+    try { values.push(["Frozen client quote", displayMoney(object.quoteMinor, object.currency)]); } catch { values.push(["Frozen client quote", "Currency details unavailable"]); }
+  }
+  return values;
+}
+export function RenewalHistory({ cycleId, service, rows, actorNames, nextCursor, onLoadMore }: { cycleId: string; service: string; rows: RenewalHistoryRow[]; actorNames: Record<string, string>; nextCursor?: string | null; onLoadMore?: () => void }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [cycleId]);
+  return <div className="rr-follow"><Link className="rr-clients__back" href={`/renewals/${cycleId}`}>Back to renewal</Link><div className="rr-dashboard__page-heading"><h1 ref={heading} tabIndex={-1}>Activity history</h1><p>{service} · Recorded cycle events, oldest first.</p></div>{!rows.length ? <section className="rr-follow__status"><h2>No cycle activity loaded</h2><p>Recorded cycle events appear here when available. Assignment and archiving are item-level events, separate from this cycle feed.</p></section> : <ol className="rr-organization__history">{rows.map(row => <li key={row.id}><h2>{labels[row.event] ?? "Recorded cycle event"}</h2><p><time dateTime={row.createdAt}>{row.createdAt.replace("T", " ").replace(/\.\d+Z$/, " UTC")}</time><span> · {row.actorId ? actorNames[row.actorId] ?? "Actor details not loaded" : "Actor not recorded"}</span></p><dl>{safeDetails(row.details).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl></li>)}</ol>}{nextCursor && <button type="button" className="rr-clients__outline-action" disabled={!onLoadMore} onClick={onLoadMore}>Load more activity</button>}</div>;
+}

@@ -52,7 +52,7 @@ for (const file of [...await files("apps/web/app/api"), ...await files("apps/web
       const entry = { method, path, source: file, authentication: path.includes("/auth/") ? "identity protocol" : path.includes("/webhooks/") ? "provider signature" : path.startsWith("/d") || path.includes("/decisions/") ? "request-scoped decision credential" : path.endsWith("/health") ? "public readiness" : "verified staff session; owner/admin MFA",
         authorization: "Server-side domain role and tenant guards; endpoint source is authoritative.",
         responses: { success: path.includes("/auth/") ? "Better Auth protocol" : path.includes("/webhooks/") ? "Empty provider acknowledgement" : path.includes(".csv") ? "text/csv" : path.startsWith("/d") ? "Redirect/private decision protocol" : "JSON data envelope",
-          errors: "400 validation; 401 authentication; 403 permissions/origin/MFA; 404 unavailable resource; 409 stale version/idempotency; 410 expired; 413 size; 415 media type; 429 rate limit with Retry-After; 500/503 safe server failure. Protocol exceptions documented in BATCH4_API.md." } };
+          errors: "400 validation; 401 authentication; 403 permissions/origin/MFA; 404 unavailable resource; 409 stale version/idempotency; 410 expired; 413 size; 415 media type; 429 rate limit with Retry-After; 500/503 safe server failure. Protocol exceptions follow the linked identity, decision and webhook handler sources." } };
       const relative = path.replace(/^\/api\/v1\/workspaces\/\{wid\}/, "");
       entry.roles = !path.startsWith("/api/v1/workspaces/{wid}") ? []
         : /^\/(billing|ownership|workspace-deletion|timezone|data-lifecycle|renewal-alerts)(\/|$)/.test(relative) || relative === "/exports/data" ? ["owner"]
@@ -85,7 +85,7 @@ for (const file of [...await files("apps/web/app/api"), ...await files("apps/web
         entry.allowlistedPaths = [...set.getText(source).matchAll(/"(\/api\/auth\/[^" ]+)"/g)].map(m => m[1]).sort();
         entry.headers = method === "POST" ? ["Origin", "Content-Type: application/json"] : [];
         entry.dynamicGet = "/api/auth/reset-password/{token}: 16–128 URL-safe characters";
-        entry.contract = "Installed Better Auth 1.7.25 schema; allowlist and MFA adaptations in linked route and BATCH4_API.md. Listed paths are specific to this method; reset-link GET is the dynamic exception.";
+        entry.contract = "Installed Better Auth 1.7.25 schema; allowlist and MFA adaptations in the linked route source. Listed paths are specific to this method; reset-link GET is the dynamic exception.";
       }
       inventory.push(entry);
     }
@@ -93,7 +93,7 @@ for (const file of [...await files("apps/web/app/api"), ...await files("apps/web
 }
 for (const dir of ["packages/contracts", "packages/domain"]) for (const file of (await files(dir)).filter(f => f.endsWith(".ts"))) sourceHashes[file] = createHash("sha256").update(await readFile(file)).digest("hex");
 const output = JSON.stringify({ format: "renewrelay-api-inventory-v1", description: "Machine-readable endpoint inventory with generated request JSON Schemas, protocol exceptions and source drift checks. Response envelopes are described, not exhaustive response field schemas. Runtime refinements are authoritative.", endpoints: inventory, sourceSha256: sourceHashes }, null, 2) + "\n";
-const target = "docs/API_CONTRACT.json";
+const target = "packages/contracts/api-contract.json";
 if (process.argv.includes("--write")) await writeFile(target, output);
 else if (await readFile(target, "utf8") !== output) throw new Error("API contract drift: review changes and run npm run contracts:generate");
 console.log(`API inventory verified: ${inventory.length} method/path entries`);

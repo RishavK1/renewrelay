@@ -46,8 +46,19 @@ function createRuntime() {
     },
     emailVerification: {
       sendOnSignUp: true,
-      async sendVerificationEmail({ user, url }) {
-        await sendMail({ to: user.email, subject: "Verify your RenewRelay email", text: url });
+      autoSignInAfterVerification: false,
+      expiresIn: 3600,
+      async sendVerificationEmail({ user, token }) {
+        const link = new URL("/verify-email", url.origin);
+        link.hash = new URLSearchParams({ token }).toString();
+        try {
+          await sendMail({ to: user.email, subject: "Verify your RenewRelay email",
+            text: `Verify your email address to continue to RenewRelay. This link expires in 1 hour.\n\n${link.href}\n\nIf you didn’t create an account or request this email, you can ignore it. This link does not sign you in.` });
+        } catch {
+          // Do not turn SMTP failure into an account-existence oracle on resend.
+          // No delivery claim or verification mutation; the user can request again.
+          console.error("RenewRelay verification email delivery failed");
+        }
       },
     },
     onAPIError: {

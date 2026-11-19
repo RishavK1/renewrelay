@@ -79,8 +79,11 @@ function showErrors(errors: Errors, form: HTMLFormElement, setErrors: (errors: E
 function SubmissionNotice({ state }: { state: ReturnType<typeof useSubmission> }) {
   if (state.notice?.status !== "error") return null;
   return <AuthNotice error>{state.notice.message}
-    {state.notice.code === "reauthentication_required" && <a className="rr-auth__notice-link" href="/login">Log in again</a>}
+    {state.notice.code === "reauthentication_required" && <a className="rr-auth__notice-link" href="/login?reauth=1">Log in again</a>}
+    {state.notice.code === "enrollment_changed" && <a className="rr-auth__notice-link" href="/auth-complete">Return to account</a>}
     {state.notice.code === "invalid_token" && <a className="rr-auth__notice-link" href="/forgot-password">Request a new reset link</a>}
+    {state.notice.code === "email_unverified" && <a className="rr-auth__notice-link" href="/check-email">Resend verification email</a>}
+    {state.notice.code === "challenge_expired" && <a className="rr-auth__notice-link" href="/login">Restart sign-in</a>}
   </AuthNotice>;
 }
 function Submit({ state, children }: { state: ReturnType<typeof useSubmission>; children: ReactNode }) {
@@ -123,10 +126,10 @@ export function EmailForm({ kind, ...props }: Props & { kind: "verification" | "
   if (sent) return <>
     <AuthBack />
     <AuthSuccessMark />
-    <AuthHeading title="Check your inbox">{verification ? "If this address needs verification, a new link will be sent to:" : "If an account exists for this address, a password reset link will be sent to:"}</AuthHeading>
+    <AuthHeading title="Check your inbox">{verification ? "If this address needs verification, check this inbox for a new link:" : "If an account exists for this address, a password reset link will be sent to:"}</AuthHeading>
     <p className="rr-auth__recipient">{recipient}</p>
     {props.preview && <AuthNotice>Preview only. No email was sent.</AuthNotice>}
-    <p className="rr-auth__hint">Check your spam folder too. Use the link in the email to continue.</p>
+    <p className="rr-auth__hint">Check your spam folder too. Use the link in the email to continue.{verification && " If it doesn’t arrive, wait a moment and request another link."}</p>
     <button className="rr-auth__submit rr-auth__after-form" type="button" onClick={() => { setSent(false); state.clearNotice(); }}>Request another link</button>
   </>;
   return <>
@@ -196,7 +199,7 @@ function EnrollmentProgress({ step }: { step: number }) {
   </div>;
 }
 
-export function AuthenticatorSetup(props: Props & { setupKey: string; recoveryCodes: readonly string[]; qrImage?: string }) {
+export function AuthenticatorSetup(props: Props & { setupKey: string; recoveryCodes: readonly string[]; qrImage?: string; accountEmail?: string }) {
   const [step, setStep] = useState<"password" | "setup" | "verify" | "save">("password");
   const [passwordError, setPasswordError] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
@@ -211,6 +214,7 @@ export function AuthenticatorSetup(props: Props & { setupKey: string; recoveryCo
   if (step === "save") return <>
     <EnrollmentProgress step={4} /><AuthHeading title="Save your recovery codes">Keep these somewhere safe. You can use a code if you lose access to your authenticator. Each code works once.</AuthHeading>
     {props.preview && <AuthNotice>Sample codes for this preview. They cannot access any account.</AuthNotice>}
+    {!props.preview && <AuthNotice>Save these before leaving this page. They won’t be displayed again after a refresh or navigation.</AuthNotice>}
     <div className="rr-auth__codes" aria-label="Recovery codes">{props.recoveryCodes.map(code => <code key={code}>{code}</code>)}</div>
     <div className="rr-auth__code-actions">
       <button type="button" onClick={() => copy(props.recoveryCodes.join("\n"))}><Copy size={16} aria-hidden="true" />Copy codes</button>
@@ -232,6 +236,7 @@ export function AuthenticatorSetup(props: Props & { setupKey: string; recoveryCo
     <EnrollmentProgress step={2} /><AuthHeading title="Add to your authenticator">{props.qrImage ? "Scan the QR code with your authenticator app, or enter the setup key manually using time-based codes." : "In your authenticator app, add an account with the setup key below. Choose time-based codes."}</AuthHeading>
     {props.preview && <AuthNotice>Sample setup key only. No authenticator is connected to an account in this preview.</AuthNotice>}
     {props.qrImage && <div className="rr-auth__qr"><img src={props.qrImage} width={184} height={184} alt={props.preview ? "Sample authenticator QR code for the UI preview" : "Scan to add RenewRelay to your authenticator app"} /><span>{props.preview ? "Sample QR · no account connection" : "Scan with your authenticator app"}</span></div>}
+    {props.accountEmail && <p className="rr-auth__recipient">{props.accountEmail}</p>}
     <ol className="rr-auth__steps"><li>Open your authenticator app and add an account.</li><li>Scan the code, or enter “RenewRelay” and the setup key below.</li><li>Return here to confirm the code.</li></ol>
     <div className="rr-auth__setup-key"><span>Manual setup key</span><code>{props.setupKey}</code><button type="button" onClick={() => copy(props.setupKey)}><Copy size={16} aria-hidden="true" />Copy setup key</button></div>
     <p className="rr-auth__hint" role="status">{copyMessage}</p>

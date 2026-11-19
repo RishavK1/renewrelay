@@ -1,0 +1,7 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { AuthNotice } from "../auth/auth-fields";
+import type { DecisionFailure } from "../decisions/contracts";
+export function SettingsValues({ values }: { values: Record<string, ReactNode> }) { return <dl className="rr-follow__review-list">{Object.entries(values).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>; }
+export function SettingsHeading({ title, description }: { title: string; description: string }) { return <><Link className="rr-clients__back" href="/settings">Back to settings</Link><div className="rr-dashboard__page-heading"><h1>{title}</h1><p>{description}</p></div></>; }
+export function SettingsFailure({ failure, frozen = false }: { failure: DecisionFailure | null; frozen?: boolean }) { if (!failure) return null; return <AuthNotice error>{failure.message}{frozen && <p>The original reviewed change is held for retry. Check its result before making another change.</p>}{["reauthentication_required", "unauthenticated"].includes(failure.code) && <Link className="rr-auth__notice-link" href="/login">Sign in again</Link>}{failure.code === "mfa_required" && <Link className="rr-auth__notice-link" href="/two-factor">Verify authenticator</Link>}{failure.code === "email_unverified" && <Link className="rr-auth__notice-link" href="/check-email">Verify email</Link>}</AuthNotice>; }

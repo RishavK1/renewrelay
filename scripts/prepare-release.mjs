@@ -10,5 +10,5 @@ await copyFile("scripts/healthcheck.mjs", "release/dist/healthcheck.mjs");
 await copyFile("package.json", "release/package.json");
 await copyFile("package-lock.json", "release/package-lock.json");
 await writeFile("release/apps/web/package.json", JSON.stringify({ type: "commonjs" }) + "\n");
-await copyFile("docs/THIRD_PARTY_NOTICES.txt", "release/THIRD_PARTY_NOTICES.txt");
+await copyFile("THIRD_PARTY_NOTICES.txt", "release/THIRD_PARTY_NOTICES.txt");
 console.log("Release staged. Production dependencies are overlaid separately to preserve standalone aliases.");

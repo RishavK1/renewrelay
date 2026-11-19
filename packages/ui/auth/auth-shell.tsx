@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export function AuthShell({ children, screen, preview }: { children: ReactNode; screen: string; preview?: boolean }) {
+export function AuthShell({ children, screen, preview, asideContent, previewMessage }: { children: ReactNode; screen: string; preview?: boolean; asideContent?: ReactNode; previewMessage?: string }) {
   return (
     <div className="rr-auth" data-screen={screen}>
       <div className="rr-auth__column">
@@ -12,10 +12,11 @@ export function AuthShell({ children, screen, preview }: { children: ReactNode; 
           <div className="rr-auth__content">{children}</div>
         </main>
         <footer className="rr-auth__footnote">
-          {preview ? "Design preview. No account is created and no email is sent. Use sample details." : "Client renewals, clearly under control."}
+          {preview ? (previewMessage ?? "Design preview. No account is created and no email is sent. Use sample details.") : "Client renewals, clearly under control."}
         </footer>
       </div>
       <aside className="rr-auth__aside" aria-label="About RenewRelay">
+        {asideContent ?? <>
         <p className="rr-auth__aside-label">Less chasing. More clarity.</p>
         <div className="rr-auth__aside-heading">
           <h2>A clearer way to manage client renewals.</h2>
@@ -36,6 +37,7 @@ export function AuthShell({ children, screen, preview }: { children: ReactNode; 
         </div>
         <span className="rr-auth__illustration-label">Illustrative renewal · sample data</span>
         <span className="rr-auth__signature" aria-hidden="true">RenewRelay</span>
+        </>}
       </aside>
     </div>
   );

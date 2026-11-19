@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { postgresTool } from "./postgres-test-tools.mjs";
 const mode = process.argv[2];
-if (!["audit", "load"].includes(mode)) throw new Error("Choose audit or load");
+if (!["audit", "load", "signup"].includes(mode)) throw new Error("Choose audit, load or signup");
 const source = new URL(process.env.MIGRATION_DATABASE_URL ?? "");
 if (!["localhost", "127.0.0.1"].includes(source.hostname)) throw new Error("Use an isolated local test server");
 const database = `renewrelay_audit_${mode}_${Date.now()}`;
@@ -16,4 +16,5 @@ env.PGDATABASE = database;
 execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], { env, stdio: "inherit" });
 postgresTool("psql", ["-v", "ON_ERROR_STOP=1", "-f", "packages/db/grant-runtime.sql"], { env });
 console.log(`Isolated ${mode} database: ${database}`);
-execFileSync(process.execPath, ["--import", "tsx", mode === "audit" ? "scripts/audit-synthetic.mjs" : "scripts/test-dispatch-load.mjs"], { env, stdio: "inherit" });
+const target = mode === "audit" ? "scripts/audit-synthetic.mjs" : mode === "load" ? "scripts/test-dispatch-load.mjs" : "tests/signup.integration.mjs";
+execFileSync(process.execPath, ["--import", "tsx", ...(mode === "signup" ? ["--test"] : []), target], { env, stdio: "inherit" });

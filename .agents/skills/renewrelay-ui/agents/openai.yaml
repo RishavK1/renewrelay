@@ -1,4 +1,0 @@
-interface:
-  display_name: "RenewRelay UI"
-  short_description: "Consistent RenewRelay pages and UI components"
-  default_prompt: "Use $renewrelay-ui to design or update this RenewRelay screen consistently with its shared design system."

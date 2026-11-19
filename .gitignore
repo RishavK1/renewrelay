@@ -12,3 +12,14 @@ dist/
 release/
 
 apps/marketing/next-env.d.ts
+
+# Local browser audit artifacts (durable summary lives in docs/audit).
+.playwright-cli/
+/output/
+
+# Internal plans, reviews and agent guidance stay on this workstation.
+/docs/
+/.agents/
+/.claude/
+/AGENTS.md
+/RenewRelay-Backend-Plan.md

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import test,{after} from 'node:test';
+import {build} from 'esbuild';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {mkdir,mkdtemp,rm,readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+await mkdir(join(process.cwd(),'.next'),{recursive:true});
+const dir=await mkdtemp(join(process.cwd(),'.next','completion-ui-'));after(()=>rm(dir,{recursive:true,force:true}));const file=join(dir,'ui.mjs');
+await build({stdin:{contents:'export * from "./packages/ui/settings/catchup-screen";export * from "./packages/ui/account/recovery-codes";export * from "./apps/marketing/components/common/fallback-screen";export * from "./apps/marketing/components/common/document-page";',resolveDir:process.cwd()},outfile:file,bundle:true,packages:'external',platform:'node',format:'esm',jsx:'automatic',logLevel:'silent'});
+const ui=await import(pathToFileURL(file).href),render=(C,props)=>renderToStaticMarkup(createElement(C,props));
+test('catchup allows grace with paidThrough and denies trial/read-only/deleting/non-owner',()=>{const billing={writable:true,paidThrough:'2026-11-01T00:00:00Z',mode:'grace'};assert.equal(ui.canRequestCatchup('owner',billing),true);for(const change of [{writable:false},{paidThrough:null},{mode:'deleting'}])assert.equal(ui.canRequestCatchup('owner',{...billing,...change}),false);assert.equal(ui.canRequestCatchup('admin',billing),false);assert.equal(ui.canRequestCatchup('member',billing),false);});
+test('recovery setup and recent-session gates hide password',()=>{for(const access of [{enabled:false,recent:true,mfa:false},{enabled:true,recent:false,mfa:true},{enabled:true,recent:true,mfa:false}]){const html=render(ui.RecoveryCodes,{...access,action:async()=>{},onUnconfirmed:()=>{}});assert.ok(html.includes('Restore security access'));assert.ok(!html.includes('id="recovery-password"'));}});
+test('recovery replacement never uses frozen secret hook or browser persistence',async()=>{const source=await readFile('packages/ui/account/recovery-codes.tsx','utf8');for(const word of ['localStorage','sessionStorage','useDecisionAction','console.log'])assert.ok(!source.includes(word));assert.ok(source.includes('setPassword("")'));assert.ok(source.includes('setCodes(null)'));assert.ok(source.includes('onUnconfirmed()'));});
+test('catchup source has no invented recent-auth requirement and exact empty action',async()=>{const source=await readFile('packages/ui/settings/catchup-screen.tsx','utf8');assert.ok(!source.includes('recentAuth'));assert.ok(source.includes('state.run({})'));assert.ok(source.includes('period!==billing.paidThrough'));});
+test('legal layouts disclose approval gaps rather than fake effective dates or compliance',()=>{for(const kind of ['privacy','terms']){const html=render(ui.DocumentPage,{kind});assert.ok(html.includes('not a published policy'));assert.ok(html.includes('Pending approval'));assert.ok(!html.includes('GDPR compliant'));assert.ok(!html.includes('mailto:'));}});
+test('fallbacks never echo raw exceptions and have useful recovery destinations',()=>{for(const kind of ['error','not-found','access','loading']){const html=render(ui.FallbackScreen,{kind});assert.ok(html.includes('main-content'));assert.ok(html.includes('<h1>'));if(kind!=='loading')assert.ok(html.includes('/workspaces'));} });

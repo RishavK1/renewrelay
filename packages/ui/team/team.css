@@ -1,0 +1,54 @@
+.rr-team { max-width: 1020px; min-width: 0; }
+.rr-team__access { display: flex; align-items: flex-start; gap: 14px; padding: 20px 24px; border: 1px solid #d5e4f1; border-radius: 16px; background: #edf5fc; margin-bottom: 30px; }
+.rr-team__access > svg { flex-shrink: 0; margin-top: 2px; color: #365878; }
+.rr-team__access strong { font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.rr-team__access p { margin: 6px 0 0; color: #526171; font-size: 14px; line-height: 1.75; max-width: 68ch; }
+.rr-team__section { margin-bottom: 30px; border: 1px solid #d8dfe5; border-radius: 18px; overflow: hidden; background: #fff; }
+.rr-team__section-heading { padding: 22px 26px; border-bottom: 1px solid #e8edf1; }
+.rr-team h2 { font-size: 19px; line-height: 1.4; font-weight: 650; letter-spacing: -.025em; margin: 0; }
+.rr-team__section-heading p { color: #526171; font-size: 13px; line-height: 1.75; margin: 6px 0 0; }
+.rr-team__list { list-style: none; padding: 0; margin: 0; }
+.rr-team__list > li { display: grid; grid-template-columns: minmax(0, 1fr) 88px 120px; align-items: center; gap: 20px; min-height: 96px; padding: 18px 26px; border-bottom: 1px solid #e8edf1; }
+.rr-team__list > li:last-child { border-bottom: 0; }
+.rr-team__identity { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.rr-team__identity > div { min-width: 0; }
+.rr-team__monogram { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border: 1px solid #d5e4f1; border-radius: 12px; background: #edf5fc; color: #365878; font-size: 14px; font-weight: 650; }
+.rr-team__identity strong, .rr-team__invite-identity strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.65; overflow-wrap: anywhere; }
+.rr-team__identity div > span, .rr-team__invite-identity > span { display: block; font-size: 12px; color: #526171; line-height: 1.7; margin-top: 4px; }
+.rr-team__you { display: inline-block; color: #526171; font-size: 11px; font-weight: 500; margin-left: 8px; }
+.rr-team__badge { display: inline-flex; align-items: center; justify-content: center; width: fit-content; min-height: 28px; padding: 4px 10px; border-radius: 99px; border: 1px solid #d8e3ed; background: #f1f6fb; font-size: 12px; color: #365878; line-height: 1.5; }
+.rr-team__badge[data-state=accepted] { background: #edf6f0; border-color: #cfe4d8; color: #285d40; }
+.rr-team__badge[data-state=expired], .rr-team__badge[data-state=revoked] { background: #f4f5f6; border-color: #dfe4e8; color: #526171; }
+.rr-team__row-action { display: flex; justify-content: flex-end; min-width: 0; }
+.rr-team__protected { color: #526171; font-size: 12px; line-height: 1.7; text-align: right; }
+.rr-team__empty { padding: 30px 26px; }
+.rr-team__empty h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+.rr-team__empty p { margin: 0; font-size: 14px; line-height: 1.75; color: #526171; }
+.rr-team__ownership { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding: 26px 0 8px; border-top: 1px solid #e8edf1; }
+.rr-team__ownership p { color: #526171; font-size: 14px; line-height: 1.75; margin: 7px 0 0; }
+.rr-team__pagination { padding: 16px 26px; border-top: 1px solid #e8edf1; }
+.rr-team-form .rr-team__confirm { background: #872732; border-color: #872732; }
+.rr-team-form .rr-team__confirm:hover:not(:disabled) { background: #6f1f29; }
+.rr-team-accept__account { padding: 18px 20px; background: #edf5fc; border: 1px solid #d5e4f1; border-radius: 12px; margin-bottom: 24px; }
+.rr-team-accept__account span { display: block; color: #526171; font-size: 13px; margin-bottom: 6px; }
+.rr-team-accept__account strong { display: block; font-size: 15px; font-weight: 600; line-height: 1.65; overflow-wrap: anywhere; }
+.rr-team-accept__hint { font-size: 14px; line-height: 1.8; color: #526171; margin: 0 0 26px; }
+.rr-team-accept .rr-auth__notice { margin-top: 24px; }
+@media (max-width: 1150px) { .rr-team__list > li { grid-template-columns: minmax(0,1fr) 80px 104px; gap: 14px; } }
+@media (max-width: 650px) {
+  .rr-team__access { padding: 18px; }
+  .rr-team__section-heading { padding: 20px; }
+  .rr-team__list > li { grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 20px; }
+  .rr-team__identity, .rr-team__invite-identity { grid-column: 1 / -1; }
+  .rr-team__row-action { min-height: 44px; align-items: center; }
+  .rr-team__ownership { align-items: flex-start; }
+  .rr-team__ownership .rr-clients__outline-action { width: 100%; }
+}
+@media (max-width: 479px) { .rr-team__section-heading, .rr-team__list > li, .rr-team__empty, .rr-team__pagination { padding-inline: 18px; } }
+
+.rr-team-accept__roles { margin-block: auto; border-block: 1px solid #c3dffe33; }
+.rr-team-accept__roles > div { padding: 18px 0; }
+.rr-team-accept__roles > div + div { border-top: 1px solid #c3dffe22; }
+.rr-team-accept__roles strong { font-size: 16px; font-weight: 600; color: #fcfbf8; }
+.rr-team-accept__roles p { margin: 6px 0 0; color: #bacbdc; font-size: 14px; line-height: 1.65; }
+@media (max-height: 700px) { .rr-team-accept__roles > div { padding: 12px 0; } .rr-team-accept__roles p { margin-top: 3px; font-size: 13px; } }

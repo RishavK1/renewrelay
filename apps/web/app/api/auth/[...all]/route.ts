@@ -7,6 +7,8 @@ import { runtime } from "@server/runtime";
 import { readJsonText } from "@server/http";
 import { limitRequest } from "@server/rate-limits";
 import { DomainError } from "@renewrelay/domain/errors";
+import { consumeRate } from "@renewrelay/domain/rate-limits";
+import { z } from "zod";
 
 const readPaths = new Set(["/api/auth/get-session", "/api/auth/verify-email"]);
 const writePaths = new Set([
@@ -36,11 +38,24 @@ async function handle(request: Request) {
       if (input.trustDevice === true || (input.method !== undefined && input.method !== "totp")) {
         throw new DomainError(400, "invalid_request", "Use authenticator verification for each sign-in.");
       }
+      if (["/api/auth/sign-up/email", "/api/auth/send-verification-email"].includes(path) && z.email().safeParse(input.email).success) {
+        // Shared across IPs/replicas and checked before account lookup. The DB key
+        // is HMAC'd; unknown and verified addresses receive the same limit.
+        await consumeRate(runtime().db, runtime().decisionSecret,
+          `identity-verification/${String(input.email).toLowerCase()}`, 3, 600_000);
+      }
       if (path.includes("/two-factor/") && !verificationPaths.has(path)) {
         const session = await runtime().auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } });
         if (session?.user.twoFactorEnabled && !session.session.mfaVerifiedAt) throw new DomainError(403, "mfa_required", "Verify your current session first.");
         if (session && Date.now() - session.session.createdAt.getTime() > 600_000) throw new DomainError(403, "reauthentication_required", "Sign in again before changing security settings.");
       }
+    }
+    if (path === "/api/auth/sign-out") {
+      // The identity library intentionally swallows deletion errors. Confirm DB
+      // revocation first so clearing the browser cookie cannot hide an active,
+      // replayable session when the database refuses the delete.
+      const session = await runtime().auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } });
+      if (session) await runtime().authDb.session.deleteMany({ where: { id: session.session.id, userId: session.user.id } });
     }
     const response = await runtime().auth.handler(body === undefined ? request : new Request(request.url, { method: "POST", headers: request.headers, body }));
     response.headers.set("Cache-Control", "no-store");
